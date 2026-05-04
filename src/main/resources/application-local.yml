@@ -1,0 +1,57 @@
+server:
+  port: ${SERVER_PORT:8093}
+
+# Azure Blob Storage Configuration
+external:
+  azure-blob-storage:
+    base-url: ${AZURE_BLOB_STORAGE_URL:http://localhost:10000/devstoreaccount1}
+    connection-string: ${AZURE_STORAGE_CONNECTION_STRING:UseDevelopmentStorage=true}
+    timeout:
+      connect: 5000
+      read: 30000
+
+# RabbitMQ Configuration
+spring:
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+    virtual-host: /
+  datasource:
+    url: jdbc:h2:mem:statementdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: https://login.microsoftonline.com/95d6a08d-8d38-495b-9c70-ab0cacd42d64/v2.0
+          audiences: eb596b75-d742-4786-8325-2a55591c69d9
+
+# Download Link Configuration
+download:
+  hmac-secret: ${DOWNLOAD_HMAC_SECRET:local-dev-secret-key-min-32-characters-long}
+  base-url: ${DOWNLOAD_BASE_URL:http://localhost:8093/api/v1/statements/download}
+
+# Logging Configuration
+logging:
+  level:
+    root: INFO
+    "[za.co.api]": DEBUG
+    "[org.springframework.amqp]": WARN
+    "[org.springframework.rabbit]": WARN
+    "[org.springframework.security]": WARN
+    "[org.springframework.security.oauth2]": WARN

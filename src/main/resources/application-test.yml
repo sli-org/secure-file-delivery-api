@@ -1,0 +1,53 @@
+server:
+  port: ${SERVER_PORT:8093}
+
+# Azure Blob Storage Configuration
+external:
+  azure-blob-storage:
+    base-url: ${AZURE_BLOB_STORAGE_URL}
+    connection-string: ENC(TODO_ENCRYPT_WITH_JASYPT)
+    timeout:
+      connect: 5000
+      read: 30000
+
+# Sentry Performance Monitoring
+sentry:
+  traces-sample-rate: 0.3
+
+# RabbitMQ Configuration
+spring:
+  rabbitmq:
+    host: testapp1.local
+    port: 5672
+    username: guest
+    password: ENC(TODO_ENCRYPT_WITH_JASYPT)
+    virtual-host: /
+  datasource:
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: https://login.microsoftonline.com/95d6a08d-8d38-495b-9c70-ab0cacd42d64/v2.0
+          audiences: eb596b75-d742-4786-8325-2a55591c69d9
+
+# Logging Configuration
+logging:
+  level:
+    root: INFO
+    "[za.co.api]": INFO
+    "[org.springframework.amqp]": WARN
+    "[org.springframework.rabbit]": WARN
+    "[org.springframework.security]": WARN
+    "[org.springframework.security.oauth2]": WARN
+
+# Download Link Configuration
+download:
+  hmac-secret: ${DOWNLOAD_HMAC_SECRET}
+  base-url: ${DOWNLOAD_BASE_URL}

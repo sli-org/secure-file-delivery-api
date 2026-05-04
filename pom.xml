@@ -1,0 +1,229 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	
+	<modelVersion>4.0.0</modelVersion>
+
+    <!-- The common parent POM -->
+	<parent>
+		<groupId>za.co.common</groupId>
+		<artifactId>common-api-starter-parent</artifactId>
+		<version>1.0.0-SNAPSHOT</version>
+	</parent>
+
+	<groupId>za.co.api.statement</groupId>
+	<artifactId>statement-api</artifactId>
+	<version>1.0.0-SNAPSHOT</version>
+	<name>statement-api</name>
+	<description>API for managing statements</description>
+	<url>https://github.com/secure-file-delivery-api</url>
+	<scm>
+		<url>https://github.com/secure-file-delivery-api</url>
+	</scm>
+	<issueManagement>
+		<system>Jira</system>
+    	<url>https://jira.local/browse/SFD</url>
+	</issueManagement>
+
+	<properties>
+		<!-- Place global properties for this project here -->
+		<!-- See the common-api-starter-parent for inherited properties such as Java and Spring Boot Version-->
+		
+		<!-- Java Version override configuration (if needed)
+	    <java.version>21</java.version>
+		<maven.compiler.source>21</maven.compiler.source>
+		<maven.compiler.target>21</maven.compiler.target>
+		-->
+
+		<!-- Code Coverage override configuration (if needed)
+		<jacoco.coverage.minimum>0.80</jacoco.coverage.minimum>-->
+		
+		<!-- Checkstyle override configuration (parent POM handles this)
+		<checkstyle.config.location>./src/main/resources/checkstyle.xml</checkstyle.config.location>
+		<checkstyle.skip>false</checkstyle.skip>-->
+	</properties>
+
+	<repositories>
+		<!-- Maven Central Repository (explicit) -->
+		<repository>
+			<id>central</id>
+			<name>Maven Central Repository</name>
+			<url>https://repo1.maven.org/maven2</url>
+			<releases>
+				<enabled>true</enabled>
+			</releases>
+			<snapshots>
+				<enabled>false</enabled>
+			</snapshots>
+		</repository>
+	   <!-- Used to access Github Packages/libs in the common-org organisation in Github Enterprise -->
+		<repository>
+			<id>github</id>
+			<name>GitHub Packages for Parent</name>
+			<url>https://maven.pkg.github.com/common-org/common-packages</url>
+			<snapshots>
+				<enabled>true</enabled>
+			</snapshots>
+		</repository>
+	</repositories>
+
+	<dependencies>
+
+		<!-- Spring Boot Actuator for health checks and monitoring -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-actuator</artifactId>
+		</dependency>
+
+		<!-- Spring Boot Web for REST APIs -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-web</artifactId>
+		</dependency>
+
+		<!-- Spring Data JPA for database persistence - database.enabled=true -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-data-jpa</artifactId>
+		</dependency>
+
+		<!-- H2 Database for local development and testing -->
+		<dependency>
+			<groupId>com.h2database</groupId>
+			<artifactId>h2</artifactId>
+			<scope>runtime</scope>
+		</dependency>
+
+		<!-- PostgreSQL Database for Docker/Production -->
+		<dependency>
+			<groupId>org.postgresql</groupId>
+			<artifactId>postgresql</artifactId>
+			<scope>runtime</scope>
+		</dependency>
+
+		<!-- Flyway for database schema migrations -->
+		<dependency>
+			<groupId>org.flywaydb</groupId>
+			<artifactId>flyway-core</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.flywaydb</groupId>
+			<artifactId>flyway-database-postgresql</artifactId>
+		</dependency>
+
+		<!-- OAuth2 Client - security.enabled=true AND integrations.enabled=true -->
+		<dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-oauth2-client</artifactId>
+        </dependency>
+
+		<!-- Common Starters -->
+		<!-- RabbitMQ - events.enabled=true -->
+		<dependency>
+            <groupId>za.co.common</groupId>
+            <artifactId>common-starter-amqp</artifactId>
+        </dependency>
+		
+		<!-- Core starters - Always include -->
+		<dependency>
+            <groupId>za.co.common</groupId>
+            <artifactId>common-starter-exception</artifactId>
+        </dependency>
+		<dependency>
+			<groupId>za.co.common</groupId>
+			<artifactId>common-starter-logging</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>za.co.common</groupId>
+			<artifactId>common-starter-validation</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>za.co.common</groupId>
+			<artifactId>common-starter-common</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>za.co.common</groupId>
+			<artifactId>common-starter-test</artifactId>
+		</dependency>
+		
+		<!-- Sentry - sentry DSN configured -->
+		<dependency>
+			<groupId>za.co.common</groupId>
+			<artifactId>common-starter-sentry</artifactId>
+		</dependency>
+		
+		<!-- Security - security.enabled=true -->
+		<dependency>
+			<groupId>za.co.common</groupId>
+			<artifactId>common-starter-security</artifactId>
+		</dependency>
+
+		<!-- SpringDoc OpenAPI for Swagger UI -->
+		<dependency>
+			<groupId>org.springdoc</groupId>
+			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+		</dependency>
+
+		<!-- Test Dependencies -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+		<!-- TestRestTemplate for integration tests (Spring Boot 4 moved it to separate module) -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-resttestclient</artifactId>
+			<scope>test</scope>
+		</dependency>
+		
+		<!-- RabbitMQ Testing - events.enabled=true -->
+		<dependency>
+			<groupId>org.springframework.amqp</groupId>
+			<artifactId>spring-rabbit-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+		
+		<!-- AssertJ for fluent assertions -->
+		<dependency>
+			<groupId>org.assertj</groupId>
+			<artifactId>assertj-core</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+		<!-- Lombok (provided scope) -->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <scope>provided</scope>
+        </dependency>
+	</dependencies>
+
+	<build>
+		<plugins>
+			<!-- Spring Boot Maven Plugin -->   
+            <plugin>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-maven-plugin</artifactId>
+				<executions>
+					<execution>
+						<goals>
+							<goal>build-info</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
+
+	<!-- GitHub Packages distribution for deployment -->
+	<distributionManagement>
+        <repository>
+			<id>github</id>
+			<name>GitHub Packages</name>
+			<url>https://maven.pkg.github.com/common-org/statement-api</url>
+		</repository>
+    </distributionManagement>
+
+</project>

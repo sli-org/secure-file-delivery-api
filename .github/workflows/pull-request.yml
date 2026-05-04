@@ -1,0 +1,16 @@
+name: On Pull Request
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  pull-request:
+    uses: common-org/common-github-workflows/.github/workflows/api-pull-request.yml@main
+    with:
+      build_runs_on: ubuntu-latest
+      github_actor: ${{ github.actor }}
+      checkout_ref: ${{ github.ref }}
+      build_artifact_id: build-artifact
+    secrets:
+      ci_bot_token: ${{ secrets.CI_BOT_TOKEN }}
+      jasypt_encryptor_password: ${{ secrets.JASYPT_ENCRYPTOR_PASSWORD_DEV }}

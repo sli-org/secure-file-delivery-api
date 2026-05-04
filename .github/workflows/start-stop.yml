@@ -1,0 +1,68 @@
+name: Start / Stop Service
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "Action to perform (start, stop, restart)"
+        required: true
+        type: choice
+        options:
+          - start
+          - stop
+          - restart
+      environment:
+        description: 'Environment'
+        required: true
+        type: choice
+        options:
+          - dev
+          - test
+          - train
+          - prod
+
+jobs:
+  dev-service-control:
+    name: Dev Server ${{ github.event.inputs.action }} service
+    if: ${{ github.event.inputs.environment == 'dev' }}
+    uses: common-org/common-github-workflows/.github/workflows/api-start-stop.yml@main
+    with:
+      service_name: ${{ github.event.repository.name }}
+      environment: ${{ github.event.inputs.environment }}
+      servers: ${{ vars.DEPLOYER_DEV_SSH_HOST_1 }} 
+      ssh_user: ${{ vars.DEPLOYER_DEV_TOMCAT_SSH_USER }}
+      start_script_path: ${{ vars.SERVICE_START_SCRIPT_PATH }}
+      stop_script_path: ${{ vars.SERVICE_STOP_SCRIPT_PATH }}
+      action: ${{ github.event.inputs.action }}
+    secrets:
+      ssh_key: ${{ secrets.DEPLOYER_DEV_TOMCAT_SSH_KEY }}
+
+  test-service-control:
+    name: Test Servers ${{ github.event.inputs.action }} service
+    if: ${{ github.event.inputs.environment == 'test' }}
+    uses: common-org/common-github-workflows/.github/workflows/api-start-stop.yml@main
+    with:
+      servers: "${{ vars.DEPLOYER_TEST_SSH_HOST_1 }},${{ vars.DEPLOYER_TEST_SSH_HOST_2 }}" 
+      ssh_user: ${{ vars.DEPLOYER_TEST_TOMCAT_SSH_USER }}
+      start_script_path: ${{ vars.SERVICE_START_SCRIPT_PATH }}
+      stop_script_path: ${{ vars.SERVICE_STOP_SCRIPT_PATH }}
+      service_name: ${{ github.event.repository.name }}
+      environment: ${{ github.event.inputs.environment }}
+      action: ${{ github.event.inputs.action }}
+    secrets:
+      ssh_key: ${{ secrets.DEPLOYER_TEST_TOMCAT_SSH_KEY }}
+
+  train-service-control:
+    name: Training ${{ github.event.inputs.action }} service
+    if: ${{ github.event.inputs.environment == 'train' }}
+    uses: common-org/common-github-workflows/.github/workflows/api-start-stop.yml@main
+    with:
+      servers: ${{ vars.DEPLOYER_TRAIN_SSH_HOST_1 }} 
+      ssh_user: ${{ vars.DEPLOYER_TRAIN_TOMCAT_SSH_USER }}
+      start_script_path: ${{ vars.SERVICE_START_SCRIPT_PATH }}
+      stop_script_path: ${{ vars.SERVICE_STOP_SCRIPT_PATH }}
+      service_name: ${{ github.event.repository.name }}
+      environment: ${{ github.event.inputs.environment }}
+      action: ${{ github.event.inputs.action }}
+    secrets:
+      ssh_key: ${{ secrets.DEPLOYER_TRAIN_TOMCAT_SSH_KEY }}

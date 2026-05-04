@@ -1,0 +1,64 @@
+# Application Environment Template
+# Copy this file and customize for your environment
+# Vault secrets should NOT be placed here — use Vault references
+
+server:
+  port: 8093
+
+spring:
+  application:
+    name: statement-api
+  datasource:
+    url: jdbc:oracle:thin:@//HOST:1521/SERVICE
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: oracle.jdbc.OracleDriver
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: false
+  rabbitmq:
+    host: ${RABBITMQ_HOST}
+    port: 5672
+    username: ${RABBITMQ_USERNAME}
+    password: ${RABBITMQ_PASSWORD}
+    virtual-host: /
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: https://login.microsoftonline.com/95d6a08d-8d38-495b-9c70-ab0cacd42d64/v2.0
+          audiences: ${OAUTH2_AUDIENCE}
+
+# Jasypt encryption
+jasypt:
+  encryptor:
+    password: ${JASYPT_PASSWORD}
+
+# HMAC download tokens
+download:
+  hmac-secret: ${DOWNLOAD_HMAC_SECRET}
+  base-url: ${DOWNLOAD_BASE_URL}
+
+# Azure Blob Storage
+external:
+  azure-blob-storage:
+    base-url: ${AZURE_BLOB_BASE_URL}
+    connection-string: ENC(encrypted-connection-string)
+
+# Events
+the:
+  events:
+    exchange: domain.events
+
+# Sentry
+sentry:
+  dsn: ${SENTRY_DSN}
+  environment: ${ENVIRONMENT}
+
+# Actuator
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics

@@ -1,0 +1,9 @@
+# =============================================================================
+# Kubernetes Namespace
+# =============================================================================
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: statement-api
+  labels:
+    app.kubernetes.io/part-of: secure-file-delivery

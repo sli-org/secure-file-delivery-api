@@ -1,0 +1,88 @@
+name: Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        type: choice
+        options:
+          - dev
+          - test
+          - train
+          - prod
+jobs:
+
+  deploy-to-dev:
+    if: ${{ github.event.inputs.environment == 'dev' }}
+    name: Deploy to Development Server
+    uses: common-org/common-github-workflows/.github/workflows/api-deploy.yml@main
+    with:
+      build_runs_on: ubuntu-latest
+      github_actor: ${{ github.actor }}
+      service_name: ${{ github.event.repository.name }}
+      environment:  ${{ github.event.inputs.environment }}
+      checkout_ref: ${{ github.ref_name }}
+      servers: ${{ vars.DEPLOYER_DEV_SSH_HOST_1 }}
+      ssh_user: ${{ vars.DEPLOYER_DEV_TOMCAT_SSH_USER }}
+      deploy_path_root: ${{ vars.DEPLOY_PATH_ROOT }}
+      deploy_script: '${{vars.DEPLOY_SCRIPT_PATH}}'
+    secrets:
+      ci_bot_token: ${{ secrets.ci_bot_token }}
+      ssh_key: ${{ secrets.DEPLOYER_DEV_TOMCAT_SSH_KEY }}
+
+  deploy-to-test:
+    if: ${{ github.event.inputs.environment == 'test' }}
+    name: Deploy to Test Server
+    uses: common-org/common-github-workflows/.github/workflows/api-deploy.yml@main
+    with:
+      build_runs_on: ubuntu-latest
+      github_actor: ${{ github.actor }}
+      service_name: ${{ github.event.repository.name }}
+      environment: ${{ github.event.inputs.environment }}
+      checkout_ref: ${{ github.ref_name }}
+      servers: "${{ vars.DEPLOYER_TEST_SSH_HOST_1 }},${{ vars.DEPLOYER_TEST_SSH_HOST_2 }}"
+      ssh_user: ${{ vars.DEPLOYER_TEST_TOMCAT_SSH_USER }}
+      deploy_path_root: ${{ vars.DEPLOY_PATH_ROOT }}
+      deploy_script: '${{vars.DEPLOY_SCRIPT_PATH}}'
+    secrets:
+      ci_bot_token: ${{ secrets.ci_bot_token }}
+      ssh_key: ${{ secrets.DEPLOYER_TEST_TOMCAT_SSH_KEY }}
+
+  deploy-to-train:
+    if: ${{ github.event.inputs.environment == 'train' }}
+    name: Deploy to Training Server
+    uses: common-org/common-github-workflows/.github/workflows/api-deploy.yml@main
+    with:
+      build_runs_on: ubuntu-latest
+      github_actor: ${{ github.actor }}
+      service_name: ${{ github.event.repository.name }}
+      environment:  ${{ github.event.inputs.environment }}
+      checkout_ref: ${{ github.ref_name }}
+      servers: ${{ vars.DEPLOYER_TRAIN_SSH_HOST_1 }}
+      ssh_user: ${{ vars.DEPLOYER_TRAIN_TOMCAT_SSH_USER }}
+      deploy_path_root: ${{ vars.DEPLOY_PATH_ROOT }}
+      deploy_script: '${{vars.DEPLOY_SCRIPT_PATH}}'
+    secrets:
+      ci_bot_token: ${{ secrets.ci_bot_token }}
+      ssh_key: ${{ secrets.DEPLOYER_TRAIN_TOMCAT_SSH_KEY }}
+
+  deploy-to-prod:
+    if: ${{ github.event.inputs.environment == 'prod' }}
+    name: Deploy to Production Servers
+    uses: common-org/common-github-workflows/.github/workflows/api-deploy.yml@main
+    with:
+      build_runs_on: ubuntu-latest
+      github_actor: ${{ github.actor }}
+      service_name: ${{ github.event.repository.name }}
+      environment:  ${{ github.event.inputs.environment }}
+      checkout_ref: ${{ github.ref_name }}
+      servers: "${{ vars.DEPLOYER_PROD_SSH_HOST_1 }},${{ vars.DEPLOYER_PROD_SSH_HOST_2 }}"
+      ssh_user: ${{ vars.DEPLOYER_PROD_TOMCAT_SSH_USER }}
+      deploy_path_root: ${{ vars.DEPLOY_PATH_ROOT }}
+      deploy_script: '${{vars.DEPLOY_SCRIPT_PATH}}'
+    secrets:
+      ci_bot_token: ${{ secrets.ci_bot_token }}
+      ssh_key: ${{ secrets.DEPLOYER_PROD_TOMCAT_SSH_KEY }}
+      

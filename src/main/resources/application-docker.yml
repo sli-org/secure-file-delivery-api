@@ -1,0 +1,53 @@
+# =============================================================================
+# Docker Compose Profile — PostgreSQL + RabbitMQ + Azurite
+# =============================================================================
+server:
+  port: ${SERVER_PORT:8093}
+
+# Azure Blob Storage (Azurite emulator)
+external:
+  azure-blob-storage:
+    base-url: ${AZURE_BLOB_STORAGE_URL:http://azurite:10000/devstoreaccount1}
+    connection-string: ${AZURE_STORAGE_CONNECTION_STRING:DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1}
+    timeout:
+      connect: 5000
+      read: 30000
+
+spring:
+  rabbitmq:
+    host: ${SPRING_RABBITMQ_HOST:rabbitmq}
+    port: ${SPRING_RABBITMQ_PORT:5672}
+    username: ${SPRING_RABBITMQ_USERNAME:rabbitmq_user}
+    password: ${SPRING_RABBITMQ_PASSWORD:rabbitmq_secret_2026}
+    virtual-host: /
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://postgres:5432/statementdb}
+    username: ${SPRING_DATASOURCE_USERNAME:statement_user}
+    password: ${SPRING_DATASOURCE_PASSWORD:statement_secret_2026}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${OAUTH2_ISSUER_URI:https://login.microsoftonline.com/95d6a08d-8d38-495b-9c70-ab0cacd42d64/v2.0}
+          audiences: ${OAUTH2_AUDIENCE:eb596b75-d742-4786-8325-2a55591c69d9}
+
+# Download Link Configuration
+download:
+  hmac-secret: ${DOWNLOAD_HMAC_SECRET:docker-compose-hmac-secret-key-min-32-chars-long!!}
+  base-url: ${DOWNLOAD_BASE_URL:http://localhost:8093/api/v1/statements/download}
+
+# Logging
+logging:
+  level:
+    root: INFO
+    "[za.co.api]": DEBUG
+    "[org.springframework.amqp]": WARN
+    "[org.springframework.security]": WARN

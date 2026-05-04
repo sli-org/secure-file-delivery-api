@@ -1,0 +1,100 @@
+{
+  "properties": [
+    {
+      "name": "events.exchange-name",
+      "type": "java.lang.String",
+      "description": "RabbitMQ exchange name for Statement domain events",
+      "defaultValue": "statement_event_exchange"
+    },
+    {
+      "name": "events.routing-key.statement-uploaded",
+      "type": "java.lang.String",
+      "description": "Event routing key for Statement upload events",
+      "defaultValue": "action.statement.uploaded"
+    },
+    {
+      "name": "events.routing-key.download-link-created",
+      "type": "java.lang.String",
+      "description": "Event routing key for DownloadLink creation events",
+      "defaultValue": "action.downloadlink.created"
+    },
+    {
+      "name": "events.routing-key.statement-deleted",
+      "type": "java.lang.String",
+      "description": "Event routing key for Statement deletion events",
+      "defaultValue": "action.statement.deleted"
+    },
+    {
+      "name": "external.azure-blob-storage.base-url",
+      "type": "java.lang.String",
+      "description": "Base URL for Azure Blob Storage API"
+    },
+    {
+      "name": "external.azure-blob-storage.connection-string",
+      "type": "java.lang.String",
+      "description": "Azure Storage connection string (use Jasypt encryption)"
+    },
+    {
+      "name": "external.azure-blob-storage.timeout.connect",
+      "type": "java.lang.Integer",
+      "description": "Connection timeout in milliseconds for Azure Blob Storage API calls",
+      "defaultValue": 5000
+    },
+    {
+      "name": "external.azure-blob-storage.timeout.read",
+      "type": "java.lang.Integer",
+      "description": "Read timeout in milliseconds for Azure Blob Storage API calls",
+      "defaultValue": 30000
+    },
+    {
+      "name": "external.api.timeout.connect",
+      "type": "java.lang.Integer",
+      "description": "Default connection timeout in milliseconds for external API calls",
+      "defaultValue": 5000
+    },
+    {
+      "name": "external.api.timeout.read",
+      "type": "java.lang.Integer",
+      "description": "Default read timeout in milliseconds for external API calls",
+      "defaultValue": 30000
+    },
+    {
+      "name": "download.hmac-secret",
+      "type": "java.lang.String",
+      "description": "HMAC secret key for signing download tokens (use Vault in production)"
+    },
+    {
+      "name": "download.base-url",
+      "type": "java.lang.String",
+      "description": "Base URL for download link generation",
+      "defaultValue": "http://localhost:8093/api/v1/statements/download"
+    }
+  ],
+  "groups": [
+    {
+      "name": "events",
+      "type": "za.co.api.statement.config.EventsConfiguration",
+      "description": "Event-driven architecture configuration for Statement domain events"
+    },
+    {
+      "name": "events.routing-key",
+      "type": "za.co.api.statement.config.EventsConfiguration.RoutingKey",
+      "description": "Routing key configurations for Statement event types"
+    },
+    {
+      "name": "external",
+      "type": "za.co.api.statement.config.ExternalApiConfiguration",
+      "description": "External API integration configuration"
+    },
+    {
+      "name": "external.azure-blob-storage",
+      "type": "za.co.api.statement.config.ExternalApiConfiguration.AzureBlobStorage",
+      "description": "Azure Blob Storage connection settings"
+    },
+    {
+      "name": "external.azure-blob-storage.timeout",
+      "type": "za.co.api.statement.config.ExternalApiConfiguration.Timeout",
+      "description": "Timeout settings for Azure Blob Storage API calls"
+    }
+  ]
+}

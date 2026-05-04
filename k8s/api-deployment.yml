@@ -1,0 +1,84 @@
+# =============================================================================
+# Statement API — Deployment + Service + Ingress
+# =============================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: statement-api
+  namespace: statement-api
+  labels:
+    app: statement-api
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: statement-api
+  template:
+    metadata:
+      labels:
+        app: statement-api
+    spec:
+      containers:
+        - name: statement-api
+          image: statement-api:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8093
+          envFrom:
+            - configMapRef:
+                name: statement-api-config
+            - secretRef:
+                name: statement-api-secret
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8093
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8093
+            initialDelaySeconds: 40
+            periodSeconds: 15
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "1Gi"
+              cpu: "1000m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: statement-api-service
+  namespace: statement-api
+spec:
+  type: ClusterIP
+  selector:
+    app: statement-api
+  ports:
+    - port: 8093
+      targetPort: 8093
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: statement-api-ingress
+  namespace: statement-api
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "12m"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: statement-api.nonprod.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: statement-api-service
+                port:
+                  number: 8093

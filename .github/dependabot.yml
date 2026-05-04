@@ -1,0 +1,23 @@
+version: 2
+
+registries:
+  github:
+    type: maven-repository
+    url: https://maven.pkg.github.com/common-org/common-packages
+    username: github-ci-bot
+    password: ${{secrets.CI_BOT_TOKEN}}
+    
+updates:
+  - package-ecosystem: "maven"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    registries:
+      - github
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5

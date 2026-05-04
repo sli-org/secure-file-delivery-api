@@ -1,0 +1,68 @@
+server:
+  port: 0
+
+# H2 in-memory database for integration tests
+spring:
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.amqp.RabbitAutoConfiguration
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    database-platform: org.hibernate.dialect.H2Dialect
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # Use public-key-location instead of issuer-uri to avoid external network calls
+          jwk-set-uri: http://localhost:0/jwks
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+    virtual-host: test
+
+# Azure Blob Storage - overridden by WireMock in tests
+external:
+  azure-blob-storage:
+    base-url: http://localhost:9999
+    connection-string: DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=test;BlobEndpoint=http://localhost:9999/devstoreaccount1
+    timeout:
+      connect: 1000
+      read: 5000
+
+# Events Configuration
+events:
+  exchange-name: test_statement_event_exchange
+  routing-key:
+    statement-uploaded: action.test.statement.uploaded
+    download-link-created: action.test.downloadlink.created
+    statement-deleted: action.test.statement.deleted
+
+# Download Link Configuration
+download:
+  hmac-secret: test-hmac-secret-key-for-integration-tests-min-32-chars
+  base-url: http://localhost:8093/api/v1/statements/download
+
+# Sentry disabled for tests
+sentry:
+  dsn: https://test@sentry.io/0
+  traces-sample-rate: 0.0
+
+# Jasypt - test encryption key
+jasypt:
+  encryptor:
+    password: test-encryption-key
+
+# Logging
+logging:
+  level:
+    root: WARN
+    "[za.co.api]": DEBUG

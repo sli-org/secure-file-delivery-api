@@ -1,0 +1,325 @@
+{
+  "info": {
+    "name": "Secure File Delivery API",
+    "description": "Postman collection for Secure File Delivery API. Covers all endpoints: upload, list, find, download-link, download, delete.\n\n**Setup:**\n1. Import this collection\n2. Import the environment file (postman-environment.json)\n3. Get a JWT token and set `bearer_token` variable\n4. Run requests in order (Upload → List → Find → Download Link → Download → Delete)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:8093" },
+    { "key": "api_path", "value": "/api/v1/statements" },
+    { "key": "statement_id", "value": "" },
+    { "key": "download_token", "value": "" },
+    { "key": "bearer_token", "value": "" }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{bearer_token}}" }]
+  },
+  "item": [
+    {
+      "name": "Health Check",
+      "item": [
+        {
+          "name": "Actuator Health",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/actuator/health", "host": ["{{base_url}}"], "path": ["actuator", "health"] },
+            "auth": { "type": "noauth" }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Health check returns 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Status is UP', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.status).to.eql('UP');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Swagger UI",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/swagger-ui/index.html", "host": ["{{base_url}}"], "path": ["swagger-ui", "index.html"] },
+            "auth": { "type": "noauth" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Statements",
+      "item": [
+        {
+          "name": "1. Upload Statement (PDF)",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{base_url}}{{api_path}}", "host": ["{{base_url}}{{api_path}}"] },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "file", "type": "file", "src": "", "description": "Select a PDF file" },
+                { "key": "customerId", "value": "CUST-001", "type": "text" },
+                { "key": "statementDate", "value": "2026-04-01T00:00:00", "type": "text" },
+                { "key": "statementType", "value": "MONTHLY", "type": "text" },
+                { "key": "accountNumber", "value": "1234567890", "type": "text" }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Upload returns 201', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "pm.test('Save statement ID', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.id).to.not.be.undefined;",
+                  "    pm.collectionVariables.set('statement_id', json.id);",
+                  "    console.log('Saved statement_id: ' + json.id);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2. List Statements",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}{{api_path}}?customerId=CUST-001&limit=10&offset=0",
+              "host": ["{{base_url}}{{api_path}}"],
+              "query": [
+                { "key": "customerId", "value": "CUST-001" },
+                { "key": "limit", "value": "10" },
+                { "key": "offset", "value": "0" },
+                { "key": "statementType", "value": "MONTHLY", "disabled": true },
+                { "key": "status", "value": "ACTIVE", "disabled": true },
+                { "key": "fromDate", "value": "2026-01-01T00:00:00", "disabled": true },
+                { "key": "toDate", "value": "2026-12-31T23:59:59", "disabled": true }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('List returns 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response has items array', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.items).to.be.an('array');",
+                  "    pm.expect(json.totalCount).to.be.a('number');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3. Find Statement by ID",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}{{api_path}}/{{statement_id}}", "host": ["{{base_url}}{{api_path}}"], "path": ["{{statement_id}}"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Find returns 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Statement has correct ID', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.id).to.eql(pm.collectionVariables.get('statement_id'));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4. Generate Download Link",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{base_url}}{{api_path}}/{{statement_id}}/download-links", "host": ["{{base_url}}{{api_path}}"], "path": ["{{statement_id}}", "download-links"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"expiresInHours\": 24,\n  \"maxDownloads\": 3\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Download link returns 201', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "pm.test('Save download token', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.downloadUrl).to.not.be.undefined;",
+                  "    // Extract token from URL (last path segment)",
+                  "    var url = json.downloadUrl;",
+                  "    var token = url.substring(url.lastIndexOf('/') + 1);",
+                  "    pm.collectionVariables.set('download_token', token);",
+                  "    console.log('Saved download_token: ' + token);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5. Download PDF (Token-Based)",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}{{api_path}}/download/{{download_token}}", "host": ["{{base_url}}{{api_path}}"], "path": ["download", "{{download_token}}"] },
+            "auth": { "type": "noauth" },
+            "description": "No JWT required — HMAC token provides authentication"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Download returns 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Content-Type is PDF', function () {",
+                  "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/pdf');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "6. Delete Statement (Soft Delete)",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{base_url}}{{api_path}}/{{statement_id}}", "host": ["{{base_url}}{{api_path}}"], "path": ["{{statement_id}}"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Delete returns 204', function () {",
+                  "    pm.response.to.have.status(204);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Negative Tests",
+      "item": [
+        {
+          "name": "Find with invalid UUID",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}{{api_path}}/not-a-uuid", "host": ["{{base_url}}{{api_path}}"], "path": ["not-a-uuid"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Returns 400 for invalid UUID', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Find non-existent statement",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}{{api_path}}/00000000-0000-0000-0000-000000000000", "host": ["{{base_url}}{{api_path}}"], "path": ["00000000-0000-0000-0000-000000000000"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Returns 404 for non-existent', function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Download with expired token",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}{{api_path}}/download/invalid-token-value", "host": ["{{base_url}}{{api_path}}"], "path": ["download", "invalid-token-value"] },
+            "auth": { "type": "noauth" }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Returns 400/404 for invalid token', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([400, 404]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Upload without auth token",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{base_url}}{{api_path}}", "host": ["{{base_url}}{{api_path}}"] },
+            "auth": { "type": "noauth" },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "file", "type": "file", "src": "" },
+                { "key": "customerId", "value": "CUST-001", "type": "text" },
+                { "key": "statementDate", "value": "2026-04-01T00:00:00", "type": "text" },
+                { "key": "statementType", "value": "MONTHLY", "type": "text" },
+                { "key": "accountNumber", "value": "1234567890", "type": "text" }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Returns 401 without auth', function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

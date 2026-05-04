@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE module PUBLIC
+    "-//Checkstyle//DTD Checkstyle Configuration 1.3//EN"
+    "https://checkstyle.org/dtds/configuration_1_3.dtd">
+<!--
+    API Checkstyle Configuration
+    
+    These rules are enforced at build time. All violations cause build failures.
+    See kit/standards/coding.md and kit/standards/documentation.md for details.
+    
+    Key Rules:
+    - JavadocMethod: All public methods need @param, @return, @throws tags
+    - JavadocType: All classes need class-level Javadoc
+    - UnusedImports: No unused imports allowed
+    - MagicNumber: Only -1, 0, 1 allowed inline (use constants for others)
+    - EmptyCatchBlock: No empty catch blocks
+    - TODO comments: Not allowed in committed code
+-->
+<module name="Checker">
+    <module name="TreeWalker">
+        <!-- Import rules - see coding.md "Import Management" -->
+        <module name="IllegalImport"/>
+        <module name="RedundantImport"/>
+        <module name="UnusedImports"/>
+        
+        <!-- Code quality -->
+        <module name="EqualsHashCode"/>
+        <module name="IllegalThrows"/>
+        <module name="FinalClass"/>
+        
+        <!-- Javadoc rules - see documentation.md "JavaDoc Standards" -->
+        <module name="JavadocMethod"/>
+        <module name="JavadocType"/>
+        
+        <!-- No empty catch blocks -->
+        <module name="EmptyCatchBlock"/>
+        
+        <!-- Magic numbers - see coding.md "Magic Numbers" section -->
+        <module name="MagicNumber">
+            <property name="ignoreNumbers" value="-1,0,1"/>
+            <property name="ignoreHashCodeMethod" value="true"/>
+            <property name="ignoreAnnotation" value="true"/>
+        </module>
+    </module>
+    
+    <!-- No TODO comments in production code -->
+    <module name="RegexpSingleline">
+        <property name="format" value="TODO"/>
+        <property name="message" value="TODO comments are not allowed in production code."/>
+        <property name="severity" value="error"/>
+    </module>
+</module>

@@ -1,0 +1,24 @@
+name: Continuous Integration
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+jobs:
+  ci:
+    name: Continuous Integration
+    uses: common-org/common-github-workflows/.github/workflows/api-ci.yml@main
+    with:
+      build_runs_on: "ubuntu-latest"
+      github_actor: ${{ github.actor }}
+      service_name: ${{ github.event.repository.name }}
+      checkout_ref: ${{ github.ref_name }}
+      servers: ${{ vars.DEPLOYER_DEV_SSH_HOST_1 }}
+      ssh_user: ${{ vars.DEPLOYER_DEV_TOMCAT_SSH_USER }}
+      deploy_path_root: ${{ vars.DEPLOY_PATH_ROOT }}
+      deploy_script: ${{ vars.DEPLOY_SCRIPT_PATH }}
+    secrets:
+      ci_bot_token: ${{ secrets.CI_BOT_TOKEN }}
+      jasypt_encryptor_password: ${{ secrets.JASYPT_ENCRYPTOR_PASSWORD_DEV }}
+      ssh_key: ${{ secrets.DEPLOYER_DEV_TOMCAT_SSH_KEY }}

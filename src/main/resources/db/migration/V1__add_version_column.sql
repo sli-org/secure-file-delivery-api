@@ -1,0 +1,54 @@
+-- ============================================================================
+-- V1: Create schema for Secure File Delivery API (Statement Management)
+-- Compatible with H2 (local/test) and PostgreSQL (docker/production)
+-- ============================================================================
+
+-- Statement table: stores statement metadata and storage references
+CREATE TABLE STATEMENT (
+    ID                  VARCHAR(36)     NOT NULL,
+    CUSTOMER_ID         VARCHAR(50)     NOT NULL,
+    STATEMENT_DATE      TIMESTAMP       NOT NULL,
+    STATEMENT_TYPE      VARCHAR(20)     NOT NULL,
+    ACCOUNT_NUMBER      VARCHAR(20)     NOT NULL,
+    FILE_NAME           VARCHAR(255)    NOT NULL,
+    FILE_SIZE           BIGINT,
+    CONTENT_HASH        VARCHAR(64),
+    BLOB_PATH           VARCHAR(500),
+    STATUS              VARCHAR(20)     DEFAULT 'AVAIL',
+    RETENTION_DAYS      INT             DEFAULT 365,
+    VERSION             BIGINT          DEFAULT 0 NOT NULL,
+    CREATED_AT          TIMESTAMP,
+    UPDATED_AT          TIMESTAMP,
+    CREATED_BY          VARCHAR(255),
+    UPDATED_BY          VARCHAR(255),
+    CONSTRAINT PK_STATEMENT PRIMARY KEY (ID)
+);
+
+CREATE INDEX IDX_STMT_CUSTOMER_ID ON STATEMENT (CUSTOMER_ID);
+CREATE INDEX IDX_STMT_TYPE ON STATEMENT (STATEMENT_TYPE);
+CREATE INDEX IDX_STMT_STATUS ON STATEMENT (STATUS);
+CREATE INDEX IDX_STMT_DATE ON STATEMENT (STATEMENT_DATE);
+CREATE INDEX IDX_STMT_CUST_STATUS ON STATEMENT (CUSTOMER_ID, STATUS);
+
+-- Download Link table: tracks secure time-limited download tokens
+CREATE TABLE DOWNLOAD_LINK (
+    ID                  VARCHAR(36)     NOT NULL,
+    STATEMENT_ID        VARCHAR(36)     NOT NULL,
+    TOKEN               VARCHAR(500),
+    EXPIRES_AT          TIMESTAMP       NOT NULL,
+    MAX_DOWNLOADS       INT,
+    DOWNLOAD_COUNT      INT,
+    STATUS              VARCHAR(20),
+    DOWNLOADED_AT       TIMESTAMP,
+    DOWNLOADED_BY_IP    VARCHAR(45),
+    VERSION             BIGINT          DEFAULT 0 NOT NULL,
+    CREATED_AT          TIMESTAMP,
+    CREATED_BY          VARCHAR(255),
+    CONSTRAINT PK_DOWNLOAD_LINK PRIMARY KEY (ID),
+    CONSTRAINT FK_DL_STATEMENT FOREIGN KEY (STATEMENT_ID) REFERENCES STATEMENT (ID)
+);
+
+CREATE INDEX IDX_DL_STATEMENT_ID ON DOWNLOAD_LINK (STATEMENT_ID);
+CREATE INDEX IDX_DL_TOKEN ON DOWNLOAD_LINK (TOKEN);
+CREATE INDEX IDX_DL_STATUS ON DOWNLOAD_LINK (STATUS);
+CREATE INDEX IDX_DL_EXPIRES_AT ON DOWNLOAD_LINK (EXPIRES_AT);

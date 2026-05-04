@@ -1,0 +1,30 @@
+name: Release
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Release
+    uses: common-org/common-github-workflows/.github/workflows/api-release.yml@main
+    with:
+      github_actor: ${{ github.actor }}
+      service_name: ${{ github.event.repository.name }}
+      rc_tag: ${{ github.ref_name }}
+      dev_servers: ${{ vars.DEPLOYER_DEV_SSH_HOST_1 }}
+      dev_ssh_user: ${{ vars.DEPLOYER_DEV_TOMCAT_SSH_USER }}
+      test_servers: "${{ vars.DEPLOYER_TEST_SSH_HOST_1 }},${{ vars.DEPLOYER_TEST_SSH_HOST_2 }}"
+      test_ssh_user: ${{ vars.DEPLOYER_TEST_TOMCAT_SSH_USER }}
+      train_servers: ${{ vars.DEPLOYER_TRAIN_SSH_HOST_1 }}
+      train_ssh_user: ${{ vars.DEPLOYER_TRAIN_TOMCAT_SSH_USER }}
+      prod_servers: "${{ vars.DEPLOYER_PROD_SSH_HOST_1 }},${{ vars.DEPLOYER_PROD_SSH_HOST_2 }}"
+      prod_ssh_user: ${{ vars.DEPLOYER_PROD_TOMCAT_SSH_USER }}
+      deploy_path_root: ${{ vars.DEPLOY_PATH_ROOT }}
+      deploy_script: ${{ vars.DEPLOY_SCRIPT_PATH }}
+    secrets:
+      ci_bot_token: ${{ secrets.CI_BOT_TOKEN }}
+      jasypt_encryptor_password: ${{ secrets.JASYPT_ENCRYPTOR_PASSWORD_DEV }} #used for build testing
+      dev_ssh_key: ${{ secrets.DEPLOYER_DEV_TOMCAT_SSH_KEY }}
+      test_ssh_key: ${{ secrets.DEPLOYER_TEST_TOMCAT_SSH_KEY }}
+      train_ssh_key: ${{ secrets.DEPLOYER_TRAIN_TOMCAT_SSH_KEY }}
+      prod_ssh_key: ${{ secrets.DEPLOYER_PROD_TOMCAT_SSH_KEY }}
