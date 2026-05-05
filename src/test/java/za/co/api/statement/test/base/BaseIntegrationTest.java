@@ -38,6 +38,7 @@ public abstract class BaseIntegrationTest {
     protected ObjectMapper objectMapper;
 
     @MockitoBean
+    @Qualifier("CommonRabbitTemplate")
     protected RabbitTemplate commonRabbitTemplate;
 
     @LocalServerPort
