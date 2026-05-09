@@ -17,7 +17,6 @@ import org.mockito.Mockito;
 import static org.mockito.ArgumentMatchers.any;
 import za.co.common.exception.GlobalExceptionHandler;
 import java.util.List;
-import org.springframework.beans.factory.annotation.Qualifier;
 
 @ExtendWith(MockitoExtension.class)
 public abstract class BaseControllerTest {

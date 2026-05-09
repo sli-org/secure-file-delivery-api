@@ -30,7 +30,7 @@ import za.co.api.statement.test.data.StatementTestFixtures;
 class StatementEventServiceTest {
 
     @Mock
-    private RabbitTemplate commonRabbitTemplate;
+    private RabbitTemplate rabbitTemplate;
 
     @InjectMocks
     private StatementEventService statementEventService;
@@ -55,7 +55,7 @@ class StatementEventServiceTest {
         ArgumentCaptor<String> exchangeCaptor = ArgumentCaptor.forClass(String.class);
         ArgumentCaptor<String> routingKeyCaptor = ArgumentCaptor.forClass(String.class);
 
-        verify(commonRabbitTemplate).convertAndSend(
+        verify(rabbitTemplate).convertAndSend(
                 exchangeCaptor.capture(),
                 routingKeyCaptor.capture(),
                 any(StatementEventDTO.class));
@@ -70,7 +70,7 @@ class StatementEventServiceTest {
         statementEventService.publishStatementUploadedEvent(testDto);
 
         ArgumentCaptor<StatementEventDTO> eventCaptor = ArgumentCaptor.forClass(StatementEventDTO.class);
-        verify(commonRabbitTemplate).convertAndSend(anyString(), anyString(), eventCaptor.capture());
+        verify(rabbitTemplate).convertAndSend(anyString(), anyString(), eventCaptor.capture());
 
         assertEquals(StatementEventTypeCode.CREATED, eventCaptor.getValue().getEventType());
     }
@@ -81,7 +81,7 @@ class StatementEventServiceTest {
         statementEventService.publishStatementUploadedEvent(testDto);
 
         ArgumentCaptor<StatementEventDTO> eventCaptor = ArgumentCaptor.forClass(StatementEventDTO.class);
-        verify(commonRabbitTemplate).convertAndSend(anyString(), anyString(), eventCaptor.capture());
+        verify(rabbitTemplate).convertAndSend(anyString(), anyString(), eventCaptor.capture());
 
         assertNotNull(eventCaptor.getValue().getTimestamp());
     }
@@ -92,7 +92,7 @@ class StatementEventServiceTest {
         statementEventService.publishStatementUploadedEvent(testDto);
 
         ArgumentCaptor<StatementEventDTO> eventCaptor = ArgumentCaptor.forClass(StatementEventDTO.class);
-        verify(commonRabbitTemplate).convertAndSend(anyString(), anyString(), eventCaptor.capture());
+        verify(rabbitTemplate).convertAndSend(anyString(), anyString(), eventCaptor.capture());
 
         assertNotNull(eventCaptor.getValue().getData());
         assertThat(eventCaptor.getValue().getId()).isEqualTo(testDto.getId());
@@ -104,7 +104,7 @@ class StatementEventServiceTest {
         statementEventService.publishDownloadLinkCreatedEvent(testDto);
 
         ArgumentCaptor<String> routingKeyCaptor = ArgumentCaptor.forClass(String.class);
-        verify(commonRabbitTemplate).convertAndSend(anyString(), routingKeyCaptor.capture(), any(StatementEventDTO.class));
+        verify(rabbitTemplate).convertAndSend(anyString(), routingKeyCaptor.capture(), any(StatementEventDTO.class));
 
         assertEquals("action.common.downloadlink.created", routingKeyCaptor.getValue());
     }
@@ -115,7 +115,7 @@ class StatementEventServiceTest {
         statementEventService.publishDownloadLinkCreatedEvent(testDto);
 
         ArgumentCaptor<StatementEventDTO> eventCaptor = ArgumentCaptor.forClass(StatementEventDTO.class);
-        verify(commonRabbitTemplate).convertAndSend(anyString(), anyString(), eventCaptor.capture());
+        verify(rabbitTemplate).convertAndSend(anyString(), anyString(), eventCaptor.capture());
 
         assertEquals(StatementEventTypeCode.UPDATED, eventCaptor.getValue().getEventType());
     }
@@ -126,7 +126,7 @@ class StatementEventServiceTest {
         statementEventService.publishStatementDeletedEvent(StatementTestFixtures.VALID_ID);
 
         ArgumentCaptor<String> routingKeyCaptor = ArgumentCaptor.forClass(String.class);
-        verify(commonRabbitTemplate).convertAndSend(anyString(), routingKeyCaptor.capture(), any(StatementEventDTO.class));
+        verify(rabbitTemplate).convertAndSend(anyString(), routingKeyCaptor.capture(), any(StatementEventDTO.class));
 
         assertEquals("action.common.statement.deleted", routingKeyCaptor.getValue());
     }
@@ -137,7 +137,7 @@ class StatementEventServiceTest {
         statementEventService.publishStatementDeletedEvent(StatementTestFixtures.VALID_ID);
 
         ArgumentCaptor<StatementEventDTO> eventCaptor = ArgumentCaptor.forClass(StatementEventDTO.class);
-        verify(commonRabbitTemplate).convertAndSend(anyString(), anyString(), eventCaptor.capture());
+        verify(rabbitTemplate).convertAndSend(anyString(), anyString(), eventCaptor.capture());
 
         assertEquals(StatementEventTypeCode.DELETED, eventCaptor.getValue().getEventType());
     }

@@ -30,10 +30,10 @@ public class StatementEventService {
     @Value("${events.routing-key.statement-deleted}")
     private String deletedRoutingKey;
 
-    private final RabbitTemplate commonRabbitTemplate;
-
-    public StatementEventService(RabbitTemplate commonRabbitTemplate) {
-        this.commonRabbitTemplate = commonRabbitTemplate;
+    private final RabbitTemplate rabbitTemplate;
+    
+    public StatementEventService(RabbitTemplate rabbitTemplate) {
+        this.rabbitTemplate = rabbitTemplate;
     }
 
     @Async
@@ -98,7 +98,7 @@ public class StatementEventService {
         log.debug("Using Exchange Name: {}", exchangeName);
         log.debug("Using Routing Key: {}", routingKey);
 
-        commonRabbitTemplate.convertAndSend(exchangeName, routingKey, eventDTO);
+        rabbitTemplate.convertAndSend(exchangeName, routingKey, eventDTO);
         log.info("Published {} Event with routing key: {} and ID: {}",
                 eventName, routingKey, eventDTO.getId());
     }

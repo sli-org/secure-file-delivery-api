@@ -5,21 +5,20 @@ import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import za.co.api.statement.test.base.BaseIntegrationTest;
+import za.co.api.statement.test.config.TestSecurityConfig;
 import za.co.api.statement.test.data.StatementTestFixtures;
 
-/**
- * Authentication integration tests — 401 Unauthorized scenarios.
- * Verifies unauthenticated requests are rejected.
- */
 @Tag("statement")
 @Tag("security")
 @DisplayName("[SFD-AI] Statement Authentication Integration Tests")
+@Import(TestSecurityConfig.class)
 class StatementAuthenticationIntegrationTest extends BaseIntegrationTest {
 
     @Test
@@ -28,7 +27,7 @@ class StatementAuthenticationIntegrationTest extends BaseIntegrationTest {
         HttpHeaders headers = new HttpHeaders();
         HttpEntity<Void> request = new HttpEntity<>(null, headers);
 
-        ResponseEntity<Object> response = testRestTemplate.exchange(
+        ResponseEntity<Object> response = restTemplate.exchange(
                 baseUrl + "/" + StatementTestFixtures.VALID_ID,
                 HttpMethod.GET, request, Object.class);
 
@@ -41,7 +40,7 @@ class StatementAuthenticationIntegrationTest extends BaseIntegrationTest {
         HttpHeaders headers = new HttpHeaders();
         HttpEntity<Void> request = new HttpEntity<>(null, headers);
 
-        ResponseEntity<Object> response = testRestTemplate.exchange(
+        ResponseEntity<Object> response = restTemplate.exchange(
                 baseUrl + "?customerId=CUST-001&limit=10&offset=0",
                 HttpMethod.GET, request, Object.class);
 
@@ -54,7 +53,7 @@ class StatementAuthenticationIntegrationTest extends BaseIntegrationTest {
         HttpHeaders headers = new HttpHeaders();
         HttpEntity<Void> request = new HttpEntity<>(null, headers);
 
-        ResponseEntity<Object> response = testRestTemplate.exchange(
+        ResponseEntity<Object> response = restTemplate.exchange(
                 baseUrl + "/" + StatementTestFixtures.VALID_ID,
                 HttpMethod.DELETE, request, Object.class);
 
@@ -68,7 +67,7 @@ class StatementAuthenticationIntegrationTest extends BaseIntegrationTest {
         headers.set(HttpHeaders.AUTHORIZATION, "Bearer invalid.jwt.token");
         HttpEntity<Void> request = new HttpEntity<>(null, headers);
 
-        ResponseEntity<Object> response = testRestTemplate.exchange(
+        ResponseEntity<Object> response = restTemplate.exchange(
                 baseUrl + "/" + StatementTestFixtures.VALID_ID,
                 HttpMethod.GET, request, Object.class);
 
@@ -78,15 +77,13 @@ class StatementAuthenticationIntegrationTest extends BaseIntegrationTest {
     @Test
     @DisplayName("[SFD-AI-005] GET /download/{token} (public endpoint) does NOT require auth")
     void whenDownload_withoutToken_thenNotUnauthorized() {
-        // The download endpoint is permitAll — should not return 401
         HttpHeaders headers = new HttpHeaders();
         HttpEntity<Void> request = new HttpEntity<>(null, headers);
 
-        ResponseEntity<Object> response = testRestTemplate.exchange(
+        ResponseEntity<Object> response = restTemplate.exchange(
                 baseUrl + "/download/some-test-token",
                 HttpMethod.GET, request, Object.class);
 
-        // Should NOT be 401 — it may be 404 or other error, but not unauthorized
         assertThat(response.getStatusCode()).isNotEqualTo(HttpStatus.UNAUTHORIZED);
     }
 }
