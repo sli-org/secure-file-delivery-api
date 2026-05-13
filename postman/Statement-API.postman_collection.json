@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "Secure File Delivery API - Azure AD",
-    "description": "Postman collection for Secure File Delivery API with Azure AD authentication using **Authorization Code flow**.\n\n🔐 **SETUP INSTRUCTIONS:**\n\n**Step 1: Configure OAuth 2.0 at the COLLECTION level**\n\n1. Click on the collection name\n2. Go to the **Authorization** tab\n3. Configure as follows:\n\n| Setting | Value |\n|---------|-------|\n| Type | OAuth 2.0 |\n| Add auth data to | Request Headers |\n| Grant Type | Authorization Code |\n| Callback URL | https://oauth.pstmn.io/v1/callback |\n| Auth URL | https://login.microsoftonline.com/{{tenant_id}}/oauth2/v2.0/authorize |\n| Access Token URL | https://login.microsoftonline.com/{{tenant_id}}/oauth2/v2.0/token |\n| Client ID | {{client_id}} |\n| Client Secret | (LEAVE BLANK) |\n| Scope | {{scope_prefix}}/statement.read {{scope_prefix}}/statement.create {{scope_prefix}}/statement.delete offline_access |\n| Client Authentication | Send as Basic Auth header |\n\n**Step 2: Get Token**\n\n4. Click 'Get New Access Token'\n5. Sign in with your Azure AD user account\n6. Click 'Use Token'\n\n**Step 3: Test**\n\n7. Send any request - the token will be automatically included\n\n**Prerequisites (already configured):**\n- ✅ Delegated permissions: statement.read, statement.create, statement.delete\n- ✅ Redirect URI: https://oauth.pstmn.io/v1/callback\n- ✅ Allow public client flows: Enabled\n\n**Why this works:**\n- Authorization Code flow includes user login → token contains 'scp' claim\n- Spring Boot automatically adds 'SCOPE_' prefix to scopes\n- Your @PreAuthorize('hasAuthority('SCOPE_statement:read')') will match",
+    "description": "Postman collection for Secure File Delivery API with Azure AD authentication using **Authorization Code flow**.\n\n🔐 **SETUP INSTRUCTIONS:**\n\n**Step 1: Configure OAuth 2.0 at the COLLECTION level**\n\n1. Click on the collection name\n2. Go to the **Authorization** tab\n3. Configure as follows:\n\n| Setting | Value |\n|---------|-------|\n| Type | OAuth 2.0 |\n| Add auth data to | Request Headers |\n| Grant Type | Authorization Code |\n| Callback URL | https://oauth.pstmn.io/v1/callback |\n| Auth URL | https://login.microsoftonline.com/{{tenant_id}}/oauth2/v2.0/authorize |\n| Access Token URL | https://login.microsoftonline.com/{{tenant_id}}/oauth2/v2.0/token |\n| Client ID | {{client_id}} |\n| Client Secret | (LEAVE BLANK) |\n| Scope | {{scope_prefix}}/statement.read {{scope_prefix}}/statement.create {{scope_prefix}}/statement.delete offline_access |\n| Client Authentication | Send as Basic Auth header |\n\n**Step 2: Get Token**\n\n4. Click 'Get New Access Token'\n5. Sign in with YOUR Microsoft account (Outlook/Live/Hotmail)\n6. Click 'Use Token'\n\n**Step 3: Test**\n\n7. Send any request - the token will be automatically included\n\n**Prerequisites (already configured by developer):**\n- ✅ Delegated permissions: statement.read, statement.create, statement.delete\n- ✅ Redirect URI: https://oauth.pstmn.io/v1/callback\n- ✅ Allow public client flows: Enabled\n\n**What you need:**\n- ✅ Your own Microsoft account (free at outlook.com)\n- ✅ No Azure subscription required\n\n**Why this works:**\n- Authorization Code flow includes user login → token contains 'scp' claim\n- Spring Boot automatically adds 'SCOPE_' prefix to scopes",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -23,10 +23,22 @@
       "listen": "prerequest",
       "script": {
         "exec": [
-          "// Pre-request check for token",
-          "if (!pm.environment.get('bearer_token')) {",
+          "// Check if token exists and is still valid",
+          "const token = pm.environment.get('bearer_token');",
+          "if (!token) {",
           "    console.log('⚠️ No bearer token found.');",
-          "    console.log('Please configure OAuth 2.0 in the Authorization tab and get a token.');",
+          "    console.log('Please go to Authorization tab and click \"Get New Access Token\"');",
+          "} else if (token && token !== '') {",
+          "    try {",
+          "        const payload = JSON.parse(atob(token.split('.')[1]));",
+          "        const exp = payload.exp * 1000;",
+          "        const now = Date.now();",
+          "        if (exp - now < 300000) {",
+          "            console.log('⚠️ Token expires in less than 5 minutes. Consider refreshing it.');",
+          "        }",
+          "    } catch(e) {",
+          "        // Token might be invalid format, ignore",
+          "    }",
           "}"
         ]
       }
@@ -35,12 +47,76 @@
   "item": [
     {
       "name": "🔐 OAuth 2.0 Token Setup (READ THIS FIRST)",
-      "description": "**To get a token that works with your controller:**\n\n1. Go to the **COLLECTION Authorization tab** (not individual request)\n2. Set Type to **OAuth 2.0**\n3. Configure:\n   - Grant Type: **Authorization Code**\n   - Callback URL: `https://oauth.pstmn.io/v1/callback`\n   - Auth URL: `https://login.microsoftonline.com/{{tenant_id}}/oauth2/v2.0/authorize`\n   - Access Token URL: `https://login.microsoftonline.com/{{tenant_id}}/oauth2/v2.0/token`\n   - Client ID: `{{client_id}}`\n   - Client Secret: **(leave empty)**\n   - Scope: `{{scope_prefix}}/statement.read {{scope_prefix}}/statement.create {{scope_prefix}}/statement.delete offline_access`\n   - Client Authentication: `Send as Basic Auth header`\n\n4. Click **Get New Access Token**\n5. Sign in with your Azure AD user account\n6. Click **Use Token**\n\n**The token will now contain the 'scp' claim with your delegated permissions!**",
+      "description": "**To get a token that works with your controller:**\n\n1. Go to the **COLLECTION Authorization tab** (not individual request)\n2. Set Type to **OAuth 2.0**\n3. Configure:\n   - Grant Type: **Authorization Code**\n   - Callback URL: `https://oauth.pstmn.io/v1/callback`\n   - Auth URL: `https://login.microsoftonline.com/{{tenant_id}}/oauth2/v2.0/authorize`\n   - Access Token URL: `https://login.microsoftonline.com/{{tenant_id}}/oauth2/v2.0/token`\n   - Client ID: `{{client_id}}`\n   - Client Secret: **(leave empty)**\n   - Scope: `{{scope_prefix}}/statement.read {{scope_prefix}}/statement.create {{scope_prefix}}/statement.delete offline_access`\n   - Client Authentication: `Send as Basic Auth header`\n\n4. Click **Get New Access Token**\n5. Sign in with YOUR Microsoft account (Outlook/Live/Hotmail)\n6. Click **Use Token**\n\n**The token will now contain the 'scp' claim with your delegated permissions!**",
       "request": {
         "method": "GET",
         "url": { "raw": "{{base_url}}/actuator/health", "host": ["{{base_url}}"], "path": ["actuator", "health"] },
         "auth": { "type": "noauth" }
       }
+    },
+    {
+      "name": "⚙️ Verify API is Reachable",
+      "request": {
+        "method": "GET",
+        "url": { "raw": "{{base_url}}/actuator/health", "host": ["{{base_url}}"], "path": ["actuator", "health"] },
+        "auth": { "type": "noauth" }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('API is reachable', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "console.log('✅ API is reachable at: ' + pm.environment.get('base_url'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "🔐 Token Utilities",
+      "item": [
+        {
+          "name": "Check Token Status (Debug)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/v1/statements/debug-auth",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "statements", "debug-auth"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Token debug returns 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "if (pm.response.code === 200) {",
+                  "    var json = pm.response.json();",
+                  "    console.log('📋 Token Information:');",
+                  "    console.log('   Authenticated: ' + json.authenticated);",
+                  "    console.log('   Authorities: ' + json.authorities?.join(', '));",
+                  "    console.log('   Scopes: ' + json.scp_claim);",
+                  "    if (json.authorities) {",
+                  "        var hasRead = json.authorities.some(a => a.includes('statement.read'));",
+                  "        var hasCreate = json.authorities.some(a => a.includes('statement.create'));",
+                  "        var hasDelete = json.authorities.some(a => a.includes('statement.delete'));",
+                  "        if (hasRead && hasCreate && hasDelete) {",
+                  "            console.log('✅ Token has all required scopes!');",
+                  "        }",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
     },
     {
       "name": "🏥 Health Check",
@@ -83,7 +159,7 @@
       "name": "📄 Statements (Requires Bearer Token)",
       "item": [
         {
-          "name": "1. List Statements (SCOPE_statement:read required)",
+          "name": "1. List Statements (SCOPE_statement.read required)",
           "request": {
             "method": "GET",
             "url": {
@@ -116,16 +192,16 @@
           ]
         },
         {
-          "name": "2. Upload Statement (SCOPE_statement:create required)",
+          "name": "2. Upload Statement (SCOPE_statement.create required)",
           "request": {
             "method": "POST",
             "url": { "raw": "{{base_url}}{{api_path}}", "host": ["{{base_url}}{{api_path}}"] },
             "body": {
               "mode": "formdata",
               "formdata": [
-                { "key": "file", "type": "file", "src": "", "description": "Select a PDF file" },
+                { "key": "file", "type": "file", "src": "", "description": "Select test-statement.pdf" },
                 { "key": "customerId", "value": "CUST-001", "type": "text" },
-                { "key": "statementDate", "value": "2026-04-01T00:00:00", "type": "text" },
+                { "key": "statementDate", "value": "2026-05-01T00:00:00", "type": "text" },
                 { "key": "statementType", "value": "MONTHLY", "type": "text" },
                 { "key": "accountNumber", "value": "1234567890", "type": "text" }
               ]
@@ -150,7 +226,7 @@
           ]
         },
         {
-          "name": "3. Find Statement by ID (SCOPE_statement:read required)",
+          "name": "3. Find Statement by ID (SCOPE_statement.read required)",
           "request": {
             "method": "GET",
             "url": { "raw": "{{base_url}}{{api_path}}/{{statement_id}}", "host": ["{{base_url}}{{api_path}}"], "path": ["{{statement_id}}"] }
@@ -169,7 +245,7 @@
           ]
         },
         {
-          "name": "4. Generate Download Link (SCOPE_statement:create required)",
+          "name": "4. Generate Download Link (SCOPE_statement.create required)",
           "request": {
             "method": "POST",
             "url": { "raw": "{{base_url}}{{api_path}}/{{statement_id}}/download-links", "host": ["{{base_url}}{{api_path}}"], "path": ["{{statement_id}}", "download-links"] },
@@ -226,7 +302,7 @@
           ]
         },
         {
-          "name": "6. Delete Statement (SCOPE_statement:delete required)",
+          "name": "6. Delete Statement (SCOPE_statement.delete required)",
           "request": {
             "method": "DELETE",
             "url": { "raw": "{{base_url}}{{api_path}}/{{statement_id}}", "host": ["{{base_url}}{{api_path}}"], "path": ["{{statement_id}}"] }
