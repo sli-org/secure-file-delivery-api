@@ -12,8 +12,11 @@
 
 ```bash
 # Clone the repository
-git clone <repository-url>
+git clone https://github.com/sli-org/secure-file-delivery-api.git
+git clone https://github.com/sli-org/common-api-starter-parent.git
+
 cd secure-file-delivery-api
+cd common-api-starter-parent
 
 # Make the script executable
 chmod +x setup.sh
