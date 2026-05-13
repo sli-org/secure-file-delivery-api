@@ -152,3 +152,6 @@ docs/kit/
 kit/
 migrate/
 api-kit-instructions.md
+
+# Docker build Maven cache (seeded by scripts/prepare-m2.sh)
+.m2/

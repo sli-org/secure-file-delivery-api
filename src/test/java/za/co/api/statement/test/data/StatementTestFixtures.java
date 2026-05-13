@@ -23,7 +23,7 @@ public final class StatementTestFixtures {
     public static final String NON_EXISTENT_ID = "00000000-0000-0000-0000-000000000000";
     public static final String CUSTOMER_ID = "CUST-001";
     public static final String ACCOUNT_NUMBER = "1234567890";
-    public static final String MASKED_ACCOUNT_NUMBER = "******7890";
+    public static final String MASKED_ACCOUNT_NUMBER = "****7890";
     public static final String FILE_NAME = "statement-2024-01.pdf";
     public static final String BLOB_PATH = "statements/CUST-001/2024/01/statement-2024-01.pdf";
     public static final String FILE_HASH = "abc123def456";

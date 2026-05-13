@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Maven settings for Docker build environment.
+  Configures the local repository path and disables GitHub Packages lookups
+  that are not available in the Docker build context.
+  The common-api-starter-parent must be pre-installed into the local .m2 cache
+  before this build runs (handled by the CI workflow's build stage).
+-->
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0
+                              https://maven.apache.org/xsd/settings-1.0.0.xsd">
+
+  <localRepository>/root/.m2/repository</localRepository>
+
+  <profiles>
+    <profile>
+      <id>docker-build</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+      <repositories>
+        <!-- Maven Central only — no GitHub Packages needed in Docker build -->
+        <repository>
+          <id>central</id>
+          <url>https://repo1.maven.org/maven2</url>
+          <releases><enabled>true</enabled></releases>
+          <snapshots><enabled>false</enabled></snapshots>
+        </repository>
+      </repositories>
+    </profile>
+  </profiles>
+
+  <mirrors>
+    <!-- Block any attempt to reach GitHub Packages (requires auth not available in Docker) -->
+    <mirror>
+      <id>block-github-packages</id>
+      <mirrorOf>github</mirrorOf>
+      <url>https://repo1.maven.org/maven2</url>
+    </mirror>
+  </mirrors>
+
+</settings>

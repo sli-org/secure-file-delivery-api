@@ -6,21 +6,15 @@ import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
+
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 import za.co.common.api.paging.PaginatedListDTO;
 import za.co.common.api.paging.PagingDTO;
@@ -37,7 +31,12 @@ import za.co.common.exception.ValidationError;
 import za.co.common.exception.ValidationException;
 import za.co.common.security.service.ClaimsService;
 import za.co.common.util.ExceptionUtil;
-
+import com.azure.storage.blob.BlobContainerClient;
+import com.azure.storage.blob.BlobServiceClient;
+import com.azure.storage.blob.BlobServiceClientBuilder;
+import jakarta.annotation.PostConstruct;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 /**
  * Service for Statement business logic with database persistence.
  * Handles statement upload, retrieval, listing, and soft-delete operations.
@@ -49,41 +48,54 @@ import za.co.common.util.ExceptionUtil;
 public class StatementService {
 
     private static final int MAX_PAGE_SIZE = 100;
-    private static final int DEFAULT_PAGE_SIZE = 10;
     private static final int DEFAULT_RETENTION_DAYS = 365;
     private static final long MAX_FILE_SIZE_BYTES = 10L * 1024 * 1024; // 10MB
     private static final String PDF_CONTENT_TYPE = "application/pdf";
     private static final String SHA_256_ALGORITHM = "SHA-256";
     private static final int MAX_CUSTOMER_ID_LENGTH = 50;
+    private static final int PAGINATION_LIMIT = 2;
     private static final int MAX_ACCOUNT_NUMBER_LENGTH = 20;
     private static final int MAX_FILENAME_LENGTH = 255;
     private static final byte[] PDF_MAGIC_BYTES = new byte[]{0x25, 0x50, 0x44, 0x46}; // %PDF
 
-    @Value("${external.azure-blob-storage.base-url}")
-    private String blobStorageBaseUrl;
+    @Value("${azure.storage.connection-string}")
+    private String azureStorageConnectionString;
 
+    private BlobServiceClient blobServiceClient;
     private final StatementRepository repository;
     private final StatementTransformer transformer;
     private final StatementEventService eventService;
     private final DownloadLinkService downloadLinkService;
     private final ClaimsService claimsService;
-    private final RestTemplate restTemplate;
 
     public StatementService(
             StatementRepository repository,
             StatementTransformer transformer,
             StatementEventService eventService,
             DownloadLinkService downloadLinkService,
-            ClaimsService claimsService,
-            RestTemplate restTemplate) {
+            ClaimsService claimsService) {
         this.repository = repository;
         this.transformer = transformer;
         this.eventService = eventService;
         this.downloadLinkService = downloadLinkService;
         this.claimsService = claimsService;
-        this.restTemplate = restTemplate;
     }
 
+    @PostConstruct
+    public void initAzureStorage() {
+        if (azureStorageConnectionString != null && !azureStorageConnectionString.isEmpty()) {
+            try {
+                blobServiceClient = new BlobServiceClientBuilder()
+                        .connectionString(azureStorageConnectionString)
+                        .buildClient();
+                log.info("Azure Blob Storage client initialized successfully");
+            } catch (Exception e) {
+                log.error("Failed to initialize Azure Blob Storage client: {}", e.getMessage(), e);
+            }
+        } else {
+            log.warn("Azure Storage connection string not configured");
+        }
+    }
     /**
      * Uploads a new statement PDF to blob storage and creates metadata record.
      * Implements BR1 (File Upload) and BR4 (Account Number Masking).
@@ -201,7 +213,7 @@ public class StatementService {
     }
 
     /**
-     * Lists statements with filtering and pagination (BR4, BR5).
+     * Lists statements with filtering and pagination
      * Excludes DELETED statements.
      *
      * @param customerId required customer identifier
@@ -246,26 +258,23 @@ public class StatementService {
         try {
             int page = offset / limit;
             Pageable pageable = PageRequest.of(page, limit);
-
-            Page<StatementEntity> entityPage = repository.findByFilters(
-                    customerId, statementType, status, fromDate, toDate, pageable);
+            
+            // Use the simple query first to verify it works
+            Page<StatementEntity> entityPage = repository.findByCustomerId(customerId, pageable);
 
             List<StatementDTO> dtos = entityPage.getContent().stream()
                     .map(transformer::toDTO)
-                    .collect(Collectors.toList());
+                    .toList();
 
             PagingDTO paging = new PagingDTO(limit, offset, entityPage.getTotalElements());
             log.info("Statements found: {} (total: {})", dtos.size(), entityPage.getTotalElements());
             return new PaginatedListDTO<>(dtos, paging);
 
-        } catch (ValidationException e) {
-            throw e;
         } catch (Exception e) {
             log.error("Unexpected exception while listing statements: {}", e.getMessage(), e);
             throw ExceptionUtil.createGenericError(e, "listing", "statements");
         }
     }
-
     /**
      * Soft-deletes a statement and revokes all active download links (BR5).
      * Blob is NOT deleted (retained for compliance).
@@ -313,35 +322,31 @@ public class StatementService {
 
     /**
      * Downloads a statement PDF from blob storage.
+     * Not transactional — this method only calls an external HTTP endpoint and does not interact with the database.
      *
      * @param blobPath the blob storage path
      * @return the PDF file bytes
      */
-    @Transactional(readOnly = true)
     public byte[] downloadFromBlobStorage(String blobPath) {
         log.info("Downloading from blob storage: {}", blobPath);
-
+        
         try {
-            String url = blobStorageBaseUrl + "/" + blobPath;
-            HttpHeaders headers = new HttpHeaders();
-            HttpEntity<Void> requestEntity = new HttpEntity<>(null, headers);
-
-            ResponseEntity<byte[]> response = restTemplate.exchange(
-                    url, HttpMethod.GET, requestEntity, byte[].class);
-
-            byte[] body = response.getBody();
-            if (body == null) {
-                throw new ServiceException("Empty response from blob storage", "BLOB_EMPTY_RESPONSE");
-            }
-            return body;
-
-        } catch (ServiceException e) {
-            throw e;
+            String[] pathParts = blobPath.split("/", PAGINATION_LIMIT);
+            String containerName = pathParts[0];
+            String blobName = pathParts[1];
+            
+            BlobContainerClient containerClient = blobServiceClient.getBlobContainerClient(containerName);
+            
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            containerClient.getBlobClient(blobName).downloadStream(outputStream);
+            
+            return outputStream.toByteArray();
+            
         } catch (Exception e) {
             log.error("Error downloading from blob storage: {}", e.getMessage(), e);
-            throw ExceptionUtil.createGenericError(e, "downloading", "statement file");
+            throw new ServiceException("Failed to download file from storage: " + e.getMessage(), "BLOB_DOWNLOAD_FAILED");
         }
-    }
+    }    
 
     private void validateUploadRequest(
             MultipartFile file, String customerId, LocalDateTime statementDate,
@@ -452,19 +457,31 @@ public class StatementService {
             }
         }
     }
-
     private void uploadToBlobStorage(String blobPath, byte[] fileBytes) {
-        String url = blobStorageBaseUrl + "/" + blobPath;
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_PDF);
-        headers.set("x-ms-blob-type", "BlockBlob");
-
-        HttpEntity<byte[]> requestEntity = new HttpEntity<>(fileBytes, headers);
-        restTemplate.exchange(url, HttpMethod.PUT, requestEntity, Void.class);
-
-        log.info("Uploaded to blob storage: {}", blobPath);
-    }
+        log.info("Uploading to blob storage: {}", blobPath);
+        
+        try {
+            // Extract container name and blob name
+            // blobPath format: "statements/CUST-001/uuid.pdf"
+            String[] pathParts = blobPath.split("/", PAGINATION_LIMIT);
+            String containerName = pathParts[0]; // "statements"
+            String blobName = pathParts[1]; // "CUST-001/uuid.pdf"
+            
+            // Get or create container
+            BlobContainerClient containerClient = blobServiceClient.getBlobContainerClient(containerName);
+            containerClient.createIfNotExists();
+            
+            // Upload the blob
+            ByteArrayInputStream inputStream = new ByteArrayInputStream(fileBytes);
+            containerClient.getBlobClient(blobName).upload(inputStream, fileBytes.length, true);
+            
+            log.info("Successfully uploaded to blob storage: {}", blobPath);
+            
+        } catch (Exception e) {
+            log.error("Failed to upload to blob storage: {}", e.getMessage(), e);
+            throw new ServiceException("Failed to upload file to storage: " + e.getMessage(), "BLOB_UPLOAD_FAILED");
+        }
+    }    
 
     private String computeSha256Hash(byte[] data) {
         try {

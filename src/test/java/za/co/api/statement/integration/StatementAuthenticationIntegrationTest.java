@@ -5,20 +5,27 @@ import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.test.context.ActiveProfiles;
+
 import za.co.api.statement.test.base.BaseIntegrationTest;
+import za.co.api.statement.test.config.TestAzureConfig;
+import za.co.api.statement.test.config.TestRabbitMQConfig;
 import za.co.api.statement.test.config.TestSecurityConfig;
 import za.co.api.statement.test.data.StatementTestFixtures;
 
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@ActiveProfiles("test")
+@Import({TestSecurityConfig.class, TestRabbitMQConfig.class, TestAzureConfig.class})
 @Tag("statement")
 @Tag("security")
 @DisplayName("[SFD-AI] Statement Authentication Integration Tests")
-@Import(TestSecurityConfig.class)
 class StatementAuthenticationIntegrationTest extends BaseIntegrationTest {
 
     @Test

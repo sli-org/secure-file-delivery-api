@@ -2,15 +2,12 @@ package za.co.api.statement.transformer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.time.LocalDateTime;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import za.co.api.statement.dto.StatementDTO;
-import za.co.api.statement.dto.code.StatementStatusCode;
-import za.co.api.statement.dto.code.StatementTypeCode;
 import za.co.api.statement.entity.StatementEntity;
 import za.co.api.statement.test.base.BaseTransformerTest;
 import za.co.api.statement.test.data.StatementTestFixtures;

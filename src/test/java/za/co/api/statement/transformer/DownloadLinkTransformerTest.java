@@ -2,13 +2,11 @@ package za.co.api.statement.transformer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.time.LocalDateTime;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Tag;
 import za.co.api.statement.dto.DownloadLinkDTO;
-import za.co.api.statement.dto.code.DownloadLinkStatusCode;
 import za.co.api.statement.entity.DownloadLinkEntity;
 import za.co.api.statement.test.base.BaseTransformerTest;
 import za.co.api.statement.test.data.StatementTestFixtures;

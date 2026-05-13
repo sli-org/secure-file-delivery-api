@@ -1,64 +1,42 @@
-server:
-  port: 0
-
-# H2 in-memory database for integration tests
 spring:
   autoconfigure:
     exclude:
       - org.springframework.boot.autoconfigure.amqp.RabbitAutoConfiguration
-      - org.springframework.boot.autoconfigure.security.oauth2.resource.servlet.OAuth2ResourceServerAutoConfiguration
+      - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
+      - org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration
+  
   datasource:
-    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    url: jdbc:h2:mem:testdb;MODE=PostgreSQL;DB_CLOSE_DELAY=-1
+    driver-class-name: org.h2.Driver
     username: sa
     password:
-    driver-class-name: org.h2.Driver
+  
   jpa:
-    hibernate:
-      ddl-auto: validate
-    show-sql: false
     database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: create-drop
+
   security:
     oauth2:
       resourceserver:
         jwt:
-          # Comment out or remove these lines for tests
-          # jwk-set-uri: http://localhost:0/jwks
-  rabbitmq:
-    host: localhost
-    port: 5672
-    username: guest
-    password: guest
-    virtual-host: test
+          issuer-uri: https://test-issuer
+          audiences: test-audience
 
-# Azure Blob Storage - overridden by WireMock in tests
-external:
-  azure-blob-storage:
-    base-url: http://localhost:9999
-    connection-string: DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=test;BlobEndpoint=http://localhost:9999/devstoreaccount1
-    timeout:
-      connect: 1000
-      read: 5000
+# Flat RabbitMQ properties (no nesting)
+events.exchange-name: test-exchange
+events.queue-name: test-queue
+events.routing-key: test.routing.key
+events.routing-key.statement-uploaded: test.statement.uploaded
+events.routing-key.statement-deleted: test.statement.deleted
+events.routing-key.statement-downloaded: test.statement.downloaded
 
-# Events Configuration
-events:
-  exchange-name: test_statement_event_exchange
-  routing-key:
-    statement-uploaded: action.test.statement.uploaded
-    download-link-created: action.test.downloadlink.created
-    statement-deleted: action.test.statement.deleted
+external.azure-blob-storage.base-url: http://localhost:10000/devstoreaccount1
+external.azure-blob-storage.container-name: test-container
+external.azure-blob-storage.connection-string: DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://localhost:10000/devstoreaccount1;
 
-# Download Link Configuration
-download:
-  hmac-secret: test-hmac-secret-key-for-integration-tests-min-32-chars
-  base-url: http://localhost:8093/api/v1/statements/download
+spring.cloud.azure.enabled: false
+azure.storage.blob.enabled: false
 
-# Sentry disabled for tests
-sentry:
-  dsn: https://test@sentry.io/0
-  traces-sample-rate: 0.0
-
-# Logging
-logging:
-  level:
-    root: WARN
-    za.co.api: DEBUG
+common.security.enabled: true
+download.hmac.secret: test-hmac-secret-key-for-unit-tests-only

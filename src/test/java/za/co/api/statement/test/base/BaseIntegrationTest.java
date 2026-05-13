@@ -13,12 +13,12 @@ public abstract class BaseIntegrationTest {
     @LocalServerPort
     protected int port;
 
-    protected RestTemplate restTemplate = new RestTemplate();
-
+    protected RestTemplate restTemplate;
     protected String baseUrl;
 
     @BeforeEach
-    public void setup() {
+    void setUp() {
+        this.restTemplate = new RestTemplate();
         baseUrl = "http://localhost:" + port + "/api/v1/statements";
     }
 }

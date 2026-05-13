@@ -3,75 +3,89 @@ package za.co.api.statement.test.config;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
+import org.springframework.context.annotation.Profile;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtException;
-import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
-import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 @TestConfiguration
 @EnableWebSecurity
+@EnableMethodSecurity(prePostEnabled = true)
+@Profile("test")
 public class TestSecurityConfig {
 
     @Bean
-    @Primary
     public SecurityFilterChain testSecurityFilterChain(HttpSecurity http) throws Exception {
         http
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/statements/download/**").permitAll()
+                .requestMatchers("/actuator/health", "/actuator/info").permitAll()
+                .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/webjars/**").permitAll()
+                .requestMatchers("/api/v1/statements/download/**").permitAll()
                 .anyRequest().authenticated()
             )
-            .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())));
+            .oauth2ResourceServer(oauth2 -> oauth2
+                .jwt(jwt -> jwt.jwtAuthenticationConverter(testJwtAuthenticationConverter()))
+            );
         
         return http.build();
     }
 
     @Bean
-    @Primary
-    public JwtDecoder jwtDecoder() {
-        return new JwtDecoder() {
-            @Override
-            public Jwt decode(String token) throws JwtException {
-                // Check if token has scopes
-                String scope = "read";
-                if (token.contains("read.only")) {
-                    scope = "read";
-                } else if (token.contains("write")) {
-                    scope = "read statements:write";
-                } else if (token.contains("no.scopes")) {
-                    scope = "";
-                }
-                
-                return Jwt.withTokenValue(token)
-                        .header("alg", "none")
-                        .header("typ", "JWT")
-                        .claim("sub", "test-user")
-                        .claim("scope", scope)
-                        .claim("client_id", "test-client")
-                        .issuedAt(Instant.now())
-                        .expiresAt(Instant.now().plusSeconds(3600))
-                        .build();
+    public JwtAuthenticationConverter testJwtAuthenticationConverter() {
+        JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
+        converter.setJwtGrantedAuthoritiesConverter(jwt -> {
+            List<String> scopes = jwt.getClaimAsStringList("scp");
+            List<String> roles = jwt.getClaimAsStringList("roles");
+            
+            java.util.Collection<org.springframework.security.core.GrantedAuthority> authorities = new java.util.ArrayList<>();
+            
+            if (scopes != null) {
+                authorities.addAll(scopes.stream()
+                    .map(scope -> new org.springframework.security.core.authority.SimpleGrantedAuthority("SCOPE_" + scope))
+                    .collect(java.util.stream.Collectors.toList()));
             }
-        };
+            
+            if (roles != null) {
+                authorities.addAll(roles.stream()
+                    .map(role -> new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_" + role))
+                    .collect(java.util.stream.Collectors.toList()));
+            }
+            
+            return authorities;
+        });
+        return converter;
     }
 
-    private JwtAuthenticationConverter jwtAuthenticationConverter() {
-        JwtGrantedAuthoritiesConverter converter = new JwtGrantedAuthoritiesConverter();
-        converter.setAuthorityPrefix("SCOPE_");
-        converter.setAuthoritiesClaimName("scope");
-        
-        JwtAuthenticationConverter jwtConverter = new JwtAuthenticationConverter();
-        jwtConverter.setJwtGrantedAuthoritiesConverter(converter);
-        return jwtConverter;
+    @Bean
+    @Primary
+    public JwtDecoder testJwtDecoder() {
+        return token -> {
+            if (token != null && token.equals("invalid.jwt.token")) {
+                throw new JwtException("Invalid JWT token");
+            }
+            
+            // Default valid token
+            return Jwt.withTokenValue(token != null ? token : "default-token")
+                .header("alg", "RS256")
+                .claim("scp", "statement:read")
+                .claim("roles", List.of())
+                .claim("aud", List.of("test-audience"))
+                .claim("iss", "https://test-issuer")
+                .issuedAt(Instant.now())
+                .expiresAt(Instant.now().plus(1, ChronoUnit.HOURS))
+                .build();
+        };
     }
 }

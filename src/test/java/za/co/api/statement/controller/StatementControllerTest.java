@@ -16,7 +16,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.time.LocalDateTime;
 import java.util.List;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -25,13 +24,11 @@ import org.mockito.Mock;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.core.Authentication;
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import za.co.common.api.paging.PaginatedListDTO;
 import za.co.common.api.paging.PagingDTO;
 import za.co.api.statement.dto.CreateDownloadLinkRequestDTO;
 import za.co.api.statement.dto.DownloadLinkDTO;
 import za.co.api.statement.dto.StatementDTO;
-import za.co.api.statement.dto.code.StatementStatusCode;
 import za.co.api.statement.dto.code.StatementTypeCode;
 import za.co.api.statement.entity.StatementEntity;
 import za.co.api.statement.service.DownloadLinkService;

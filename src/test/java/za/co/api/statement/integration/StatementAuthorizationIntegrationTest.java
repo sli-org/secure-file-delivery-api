@@ -27,8 +27,10 @@ class StatementAuthorizationIntegrationTest extends BaseIntegrationTest {
 
     @BeforeEach
     void setUpTokens() {
-        validToken = "valid.jwt.token.with.write.scope";
+        // "read.only" keyword causes TestSecurityConfig to grant only statement:read scope
         readOnlyToken = "valid.jwt.token.with.read.only.scope";
+        // No special keyword — TestSecurityConfig grants full scopes (read + create + delete)
+        validToken = "valid.jwt.token.with.full.scopes";
     }
 
     @Test

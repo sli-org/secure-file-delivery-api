@@ -1,6 +1,17 @@
 # =============================================================================
-# Azurite — Azure Blob Storage Emulator
+# Azurite — Azure Blob Storage Emulator (PVC + Deployment + Service + Init Job)
 # =============================================================================
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: azurite-pvc
+  namespace: statement-api
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 5Gi
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -19,9 +30,28 @@ spec:
       containers:
         - name: azurite
           image: mcr.microsoft.com/azure-storage/azurite:latest
-          command: ["azurite-blob", "--blobHost", "0.0.0.0", "--blobPort", "10000"]
+          command:
+            - azurite-blob
+            - "--blobHost"
+            - "0.0.0.0"
+            - "--blobPort"
+            - "10000"
+            - "--location"
+            - "/data"
           ports:
             - containerPort: 10000
+          volumeMounts:
+            - name: azurite-storage
+              mountPath: /data
+          readinessProbe:
+            tcpSocket:
+              port: 10000
+            initialDelaySeconds: 5
+            periodSeconds: 5
+      volumes:
+        - name: azurite-storage
+          persistentVolumeClaim:
+            claimName: azurite-pvc
 ---
 apiVersion: v1
 kind: Service
@@ -34,3 +64,32 @@ spec:
   ports:
     - port: 10000
       targetPort: 10000
+---
+# One-time Job: creates the 'statements' blob container after Azurite is ready.
+# Run manually after first deploy: kubectl apply -f k8s/azurite.yml
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: azurite-container-init
+  namespace: statement-api
+spec:
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: az-cli-init
+          image: mcr.microsoft.com/azure-cli:latest
+          env:
+            - name: AZURE_STORAGE_CONNECTION_STRING
+              valueFrom:
+                secretKeyRef:
+                  name: statement-api-secret
+                  key: AZURE_STORAGE_CONNECTION_STRING
+          command:
+            - sh
+            - -c
+            - |
+              az storage container create \
+                --name statements \
+                --connection-string "$AZURE_STORAGE_CONNECTION_STRING" \
+                --public-access off && echo "Container created."

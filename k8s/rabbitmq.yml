@@ -1,6 +1,17 @@
 # =============================================================================
-# RabbitMQ — Deployment + Service
+# RabbitMQ — PersistentVolumeClaim + Deployment + Service
 # =============================================================================
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: rabbitmq-pvc
+  namespace: statement-api
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 1Gi
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -16,6 +27,8 @@ spec:
       labels:
         app: rabbitmq
     spec:
+      # Fixed hostname ensures the RabbitMQ node name is stable across restarts
+      hostname: rabbitmq
       containers:
         - name: rabbitmq
           image: rabbitmq:4-management-alpine
@@ -33,11 +46,20 @@ spec:
                 secretKeyRef:
                   name: statement-api-secret
                   key: SPRING_RABBITMQ_PASSWORD
+            - name: RABBITMQ_NODENAME
+              value: rabbit@rabbitmq
+          volumeMounts:
+            - name: rabbitmq-storage
+              mountPath: /var/lib/rabbitmq/mnesia
           readinessProbe:
             exec:
               command: ["rabbitmq-diagnostics", "check_port_connectivity"]
             initialDelaySeconds: 15
             periodSeconds: 10
+      volumes:
+        - name: rabbitmq-storage
+          persistentVolumeClaim:
+            claimName: rabbitmq-pvc
 ---
 apiVersion: v1
 kind: Service

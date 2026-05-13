@@ -5,20 +5,130 @@ on:
     branches:
       - main
   workflow_dispatch:
+
 jobs:
-  ci:
-    name: Continuous Integration
-    uses: common-org/common-github-workflows/.github/workflows/api-ci.yml@main
-    with:
-      build_runs_on: "ubuntu-latest"
-      github_actor: ${{ github.actor }}
-      service_name: ${{ github.event.repository.name }}
-      checkout_ref: ${{ github.ref_name }}
-      servers: ${{ vars.DEPLOYER_DEV_SSH_HOST_1 }}
-      ssh_user: ${{ vars.DEPLOYER_DEV_TOMCAT_SSH_USER }}
-      deploy_path_root: ${{ vars.DEPLOY_PATH_ROOT }}
-      deploy_script: ${{ vars.DEPLOY_SCRIPT_PATH }}
-    secrets:
-      ci_bot_token: ${{ secrets.CI_BOT_TOKEN }}
-      jasypt_encryptor_password: ${{ secrets.JASYPT_ENCRYPTOR_PASSWORD_DEV }}
-      ssh_key: ${{ secrets.DEPLOYER_DEV_TOMCAT_SSH_KEY }}
+  build-and-test:
+    name: Build, Test & Package
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: statementdb
+          POSTGRES_USER: statement_user
+          POSTGRES_PASSWORD: statement_secret_2026
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U statement_user -d statementdb"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      rabbitmq:
+        image: rabbitmq:4-management-alpine
+        env:
+          RABBITMQ_DEFAULT_USER: rabbitmq_user
+          RABBITMQ_DEFAULT_PASS: rabbitmq_secret_2026
+        ports:
+          - 5672:5672
+        options: >-
+          --health-cmd "rabbitmq-diagnostics check_port_connectivityname: Continuous Integration
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    name: Bu s
+on:
+  push:
+    branches:
+/ch  ko    br        - main    workflow_: 
+jobs:
+  build-and- }}  bu      name: Build, J    runs-on: ubuntu-latest
+
+  tu
+    services:
+      post         postgrer        image:          env:
+          POSTGRES_            P m          POSTGRES_USER: statemend           POSTGRES_PASSWORD: statements:        ports:
+          - 5432:5         path: ~/.          - 5/z        options: >-             --healthr-          --health-interval 10s
+          --health-timeout 5s
+ keys:           --health-timeout 5s
+}-          --health-retries 5on-api-starter-parent (if not ca        image:ru        env:
+          RABBITMQ_DEFAULT_UStory/za/co/comm          RABBITMQ_DEFAULT_PASS: rabbitmq_sec          ports:
+          - 5672:5672
+        optionsn           - 5          options: >-
+de          --health  
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build-and-test:y_owner }}/co  on    brta      - mat.gi  workflow_  
+jobs:
+  build-and-are  bu      name: Bu s
+o/con:
+  push:
+ &&  vn    brll/ch  koTests -jobs:
+  build-and- }}  bu       echo "Commo  bure
+  tu
+    services:
+      post         postgrer        image:   l tests
+      post   mvn verify -B
+        env:
+          SPRING_PROFILES_ACTI          - 5432:5         path: ~/.          - 5/z        options: >-             --heons/upload-artifact@v4
+        with:
+          --health-timeout 5s
+ keys:           --health-timeout 5s
+}-          --health-retries 5on-api-starter-parent (if  J keys:           --health-tioa}-          --health-retries 5on-ap            RABBITMQ_DEFAULT_UStory/za/co/comm          RABBITMQ_DEFAULT_PASS: rabbitmq_secer          - 5672:5672
+        optionsn           - 5          options: >-
+de        : build-and-test
+    i        optionsn    fsde          --health  
+on:
+  push:
+    branches:
+ uron:
+  push:
+ es: action  ch    br@v      - mainam  workflow_DK
+jobs:
+  build-and-ctions/sejobs:
+  build-and-are  bu      name: Bu s
+o/con:
+  push:
+ &&  vn  istr  buioo/con:
+  push:
+ &&  vn    brll/ch n
+
+       &&  v:   build-and- }}  bu       echo "C i  tu
+    services:
+      post         post c   e       post          post   mvn verify -B
+        env:
+          UB        env:
+          SPgi          Sto        with:
+          --health-timeout 5s
+ keys:           --health-timeout 5s
+}-          --health-retries 5on-api-starter-parent (if  -q          --me keys:   ommon-starter artifac}-          --health-retries 5on-ap r        optionsn           - 5          options: >-
+de        : build-and-test
+    i        optionsn    fsde          --health  
+on:
+  push:
+    branches:
+ uron:
+  push:
+ es: action  ch    br@v      - mainam  workflow_DK
+jobs:
+  build-aacde        : build-and-test
+    i        optionsn     file: ./Dockerfile
+       on:
+  push:
+    branches:
+ uro statement-api:${{ g  hub.sha }} uron:
+  pusache-from: type=gjobs:
+       cache-to: type=gha,mode=max

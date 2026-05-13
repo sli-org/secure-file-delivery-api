@@ -31,7 +31,6 @@ import za.co.api.statement.repository.StatementRepository;
 import za.co.api.statement.test.data.StatementTestFixtures;
 import za.co.api.statement.transformer.DownloadLinkTransformer;
 import za.co.common.exception.ResourceNotFoundException;
-import za.co.common.exception.ServiceException;
 import za.co.common.exception.ValidationException;
 import za.co.common.security.service.ClaimsService;
 
@@ -51,9 +50,6 @@ class DownloadLinkServiceTest {
 
     @Mock
     private DownloadLinkTransformer transformer;
-
-    @Mock
-    private StatementEventService eventService;
 
     @Mock
     private ClaimsService claimsService;

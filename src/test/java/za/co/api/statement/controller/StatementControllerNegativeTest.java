@@ -19,7 +19,6 @@ import za.co.api.statement.service.StatementService;
 import za.co.api.statement.test.base.BaseControllerTest;
 import za.co.api.statement.test.data.StatementTestFixtures;
 import za.co.common.exception.ResourceNotFoundException;
-import za.co.common.exception.ValidationException;
 
 @Tag("statement-controller")
 @DisplayName("[SFD-350] Statement Controller Negative Tests")

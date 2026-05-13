@@ -1,20 +1,31 @@
 # =============================================================================
 # Docker Compose — Secure File Delivery API
 # =============================================================================
-# Usage:
-#   docker compose up -d              # Start all services
-#   docker compose up -d --build      # Rebuild API image and start
-#   docker compose logs -f api        # Follow API logs
-#   docker compose down -v            # Stop and remove volumes
+# PREREQUISITES (run once):
+#   cd ../common-api-starter-parent && mvn install -DskipTests -B
+#   cd ../secure-file-delivery-api  && ./scripts/prepare-m2.sh
+#
+# USAGE:
+#   docker compose up -d              # Start all (cached image)
+#   docker compose up -d --build      # Rebuild API image then start
+#   docker compose logs -f api        # Tail API logs
+#   docker compose down               # Stop (keeps volumes)
+#   docker compose down -v            # Stop + wipe all volumes
+#
+# ENDPOINTS:
+#   API       → http://localhost:8093
+#   Swagger   → http://localhost:8093/swagger-ui/index.html
+#   Health    → http://localhost:8093/actuator/health
+#   RabbitMQ  → http://localhost:15672  (rabbitmq_user / rabbitmq_secret_2026)
+#   Postgres  → localhost:5432          (statement_user / statement_secret_2026)
+#   Azurite   → http://localhost:10000/devstoreaccount1
 # =============================================================================
 
 services:
-  # ---------------------------------------------------------------------------
-  # PostgreSQL Database
-  # ---------------------------------------------------------------------------
   postgres:
     image: postgres:16-alpine
     container_name: statement-db
+    restart: unless-stopped
     env_file: .env
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
@@ -29,39 +40,41 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 15s
     networks:
       - statement-net
 
-  # ---------------------------------------------------------------------------
-  # RabbitMQ Message Broker
-  # ---------------------------------------------------------------------------
+  # Fixed RabbitMQ configuration
   rabbitmq:
-    image: rabbitmq:4-management-alpine
+    image: rabbitmq:3.13-management-alpine
     container_name: statement-rabbitmq
-    env_file: .env
+    restart: unless-stopped
     environment:
-      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
-      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-rabbitmq_user}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:-rabbitmq_secret_2026}
+      RABBITMQ_DEFAULT_VHOST: /
+      RABBITMQ_ERLANG_COOKIE: ${RABBITMQ_ERLANG_COOKIE:-secret_cookie_value}
     ports:
       - "5672:5672"
       - "15672:15672"
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
+    # Run as root to avoid permission issues
+    user: "0:0"
     healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
-      interval: 10s
-      timeout: 5s
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 30s
+      timeout: 10s
       retries: 5
+      start_period: 30s
     networks:
       - statement-net
 
-  # ---------------------------------------------------------------------------
-  # Azurite — Azure Blob Storage Emulator
-  # ---------------------------------------------------------------------------
   azurite:
     image: mcr.microsoft.com/azure-storage/azurite:latest
     container_name: statement-azurite
-    command: "azurite-blob --blobHost 0.0.0.0 --blobPort 10000"
+    restart: unless-stopped
+    command: azurite-blob --blobHost 0.0.0.0 --blobPort 10000 --location /data
     ports:
       - "10000:10000"
     volumes:
@@ -69,40 +82,47 @@ services:
     networks:
       - statement-net
 
-  # ---------------------------------------------------------------------------
-  # Statement API (Spring Boot)
-  # ---------------------------------------------------------------------------
+  azurite-init:
+    image: mcr.microsoft.com/azure-cli:latest
+    container_name: statement-azurite-init
+    depends_on:
+      - azurite
+    environment:
+      AZURE_STORAGE_CONNECTION_STRING: ${AZURE_STORAGE_CONNECTION_STRING}
+    command: >
+      sh -c "sleep 5 && az storage container create --name statements --connection-string \"$AZURE_STORAGE_CONNECTION_STRING\" --public-access off 2>&1 || true"
+    networks:
+      - statement-net
+    restart: "no"
+
   api:
     build:
       context: .
       dockerfile: Dockerfile
     container_name: statement-api
+    restart: unless-stopped
     env_file: .env
     environment:
       SPRING_PROFILES_ACTIVE: docker
-      SERVER_PORT: ${SERVER_PORT}
+      SERVER_PORT: ${SERVER_PORT:-8093}
       SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
       SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
       SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
-      SPRING_RABBITMQ_HOST: ${SPRING_RABBITMQ_HOST}
-      SPRING_RABBITMQ_PORT: ${SPRING_RABBITMQ_PORT}
-      SPRING_RABBITMQ_USERNAME: ${SPRING_RABBITMQ_USERNAME}
-      SPRING_RABBITMQ_PASSWORD: ${SPRING_RABBITMQ_PASSWORD}
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: ${RABBITMQ_DEFAULT_USER:-rabbitmq_user}
+      SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_DEFAULT_PASS:-rabbitmq_secret_2026}
       AZURE_BLOB_STORAGE_URL: ${AZURE_BLOB_STORAGE_URL}
       AZURE_STORAGE_CONNECTION_STRING: ${AZURE_STORAGE_CONNECTION_STRING}
       DOWNLOAD_HMAC_SECRET: ${DOWNLOAD_HMAC_SECRET}
       DOWNLOAD_BASE_URL: ${DOWNLOAD_BASE_URL}
-      OAUTH2_ISSUER_URI: ${OAUTH2_ISSUER_URI}
-      OAUTH2_AUDIENCE: ${OAUTH2_AUDIENCE}
     ports:
-      - "${SERVER_PORT}:${SERVER_PORT}"
+      - "${SERVER_PORT:-8093}:${SERVER_PORT:-8093}"
     depends_on:
       postgres:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
-      azurite:
-        condition: service_started
     networks:
       - statement-net
 

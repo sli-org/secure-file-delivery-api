@@ -7,8 +7,8 @@ server:
 # Azure Blob Storage (Azurite emulator)
 external:
   azure-blob-storage:
-    base-url: ${AZURE_BLOB_STORAGE_URL:http://azurite:10000/devstoreaccount1}
-    connection-string: ${AZURE_STORAGE_CONNECTION_STRING:DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1}
+    base-url: ${AZURE_BLOB_STORAGE_URL}
+    connection-string: ${AZURE_STORAGE_CONNECTION_STRING}
     timeout:
       connect: 5000
       read: 30000
@@ -27,23 +27,42 @@ spring:
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
-      ddl-auto: update
+      # Flyway owns the schema — Hibernate must NOT modify it
+      ddl-auto: validate
     show-sql: false
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
+        
   security:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: ${OAUTH2_ISSUER_URI:https://login.microsoftonline.com/95d6a08d-8d38-495b-9c70-ab0cacd42d64/v2.0}
-          audiences: ${OAUTH2_AUDIENCE:eb596b75-d742-4786-8325-2a55591c69d9}
+          issuer-uri: ${OAUTH2_ISSUER_URI}
+          jwk-set-uri: ${OAUTH2_JWK_SET_URI}
+          audiences: ${OAUTH2_AUDIENCE}
+          connect-timeout: 5000
+          read-timeout: 5000
 
 # Download Link Configuration
 download:
   hmac-secret: ${DOWNLOAD_HMAC_SECRET:docker-compose-hmac-secret-key-min-32-chars-long!!}
   base-url: ${DOWNLOAD_BASE_URL:http://localhost:8093/api/v1/statements/download}
 
+# RabbitMQ Events Configuration
+events:
+  exchange-name: ${EVENTS_EXCHANGE_NAME:statement.events.exchange}
+  queue-name: ${EVENTS_QUEUE_NAME:statement.events.queue}
+  routing-key: ${EVENTS_ROUTING_KEY:statement.event}
+  statement-uploaded: ${EVENTS_ROUTING_KEY_STATEMENT_UPLOADED:statement.uploaded}
+  statement-deleted: ${EVENTS_ROUTING_KEY_STATEMENT_DELETED:statement.deleted}
+  statement-downloaded: ${EVENTS_ROUTING_KEY_STATEMENT_DOWNLOADED:statement.downloaded}
+  download-link-created: ${EVENTS_ROUTING_KEY_DOWNLOAD_LINK_CREATED:download-link.created}
+  download-link-expired: ${EVENTS_ROUTING_KEY_DOWNLOAD_LINK_EXPIRED:download-link.expired}
+  download-link-revoked: ${EVENTS_ROUTING_KEY_DOWNLOAD_LINK_REVOKED:download-link.revoked}
+  file-processed: ${EVENTS_ROUTING_KEY_FILE_PROCESSED:file.processed}
+  file-failed: ${EVENTS_ROUTING_KEY_FILE_FAILED:file.failed}
+  
 # Logging
 logging:
   level:
@@ -51,3 +70,8 @@ logging:
     "[za.co.api]": DEBUG
     "[org.springframework.amqp]": WARN
     "[org.springframework.security]": WARN
+
+# Sentry Configuration (disabled for local development)
+sentry:
+  enabled: ${SENTRY_ENABLED:false}
+  dsn: ${SENTRY_DSN:http://dummy@localhost:9000/1}

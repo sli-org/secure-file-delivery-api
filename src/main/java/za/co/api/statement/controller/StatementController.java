@@ -10,6 +10,10 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpHeaders;
@@ -18,6 +22,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -83,7 +88,7 @@ public class StatementController {
             content = @Content(mediaType = "application/json", schema = @Schema(implementation = ProblemDetail.class)))
     })
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @PreAuthorize("hasRole('common-api.admin') or hasAuthority('SCOPE_statement:create')")
+    @PreAuthorize("hasRole('common-api.admin') or hasAuthority('SCOPE_statement.create')")
     public ResponseEntity<StatementDTO> uploadStatement(
             @RequestParam("file") MultipartFile file,
             @RequestParam("customerId") String customerId,
@@ -113,7 +118,7 @@ public class StatementController {
             content = @Content(mediaType = "application/json", schema = @Schema(implementation = ProblemDetail.class)))
     })
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('common-api.admin') or hasAuthority('SCOPE_statement:read')")
+    @PreAuthorize("hasRole('common-api.admin') or hasAuthority('SCOPE_statement.read')")
     public ResponseEntity<StatementDTO> find(@PathVariable String id, Authentication authentication) {
         StatementDTO statement = statementService.find(id, authentication);
         return ResponseEntity.ok(statement);
@@ -155,7 +160,7 @@ public class StatementController {
             content = @Content(mediaType = "application/json", schema = @Schema(implementation = ProblemDetail.class)))
     })
     @GetMapping
-    @PreAuthorize("hasRole('common-api.admin') or hasAuthority('SCOPE_statement:read')")
+    @PreAuthorize("hasRole('common-api.admin') or hasAuthority('SCOPE_statement.read')")
     public ResponseEntity<PaginatedListDTO<StatementDTO>> findAll(
             @RequestParam String customerId,
             @RequestParam(required = false) StatementTypeCode statementType,
@@ -191,7 +196,7 @@ public class StatementController {
             content = @Content(mediaType = "application/json", schema = @Schema(implementation = ProblemDetail.class)))
     })
     @PostMapping("/{id}/download-links")
-    @PreAuthorize("hasRole('common-api.admin') or hasAuthority('SCOPE_statement:create')")
+    @PreAuthorize("hasRole('common-api.admin') or hasAuthority('SCOPE_statement.create')")
     public ResponseEntity<DownloadLinkDTO> generateDownloadLink(
             @PathVariable String id,
             @Valid @RequestBody(required = false) CreateDownloadLinkRequestDTO request,
@@ -252,9 +257,33 @@ public class StatementController {
             content = @Content(mediaType = "application/json", schema = @Schema(implementation = ProblemDetail.class)))
     })
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('common-api.admin') or hasAuthority('SCOPE_statement:delete')")
+    @PreAuthorize("hasRole('common-api.admin') or hasAuthority('SCOPE_statement.delete')")
     public ResponseEntity<Void> delete(@PathVariable String id, Authentication authentication) {
         statementService.delete(id, authentication);
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("/debug-auth")
+    public ResponseEntity<?> debugAuth(Authentication authentication) {
+        if (authentication == null) {
+            return ResponseEntity.ok(Map.of("message", "No authentication"));
+        }
+        
+        Map<String, Object> result = new HashMap<>();
+        result.put("authenticated", authentication.isAuthenticated());
+        result.put("authorities", authentication.getAuthorities().stream()
+            .map(a -> a.getAuthority())
+            .collect(Collectors.toList()));
+        
+        if (authentication.getPrincipal() instanceof Jwt) {
+            Jwt jwt = (Jwt) authentication.getPrincipal();
+            result.put("scp_claim", jwt.getClaimAsString("scp"));
+            result.put("issuer", jwt.getIssuer().toString());
+            result.put("audience", jwt.getAudience());
+        }
+        
+        return ResponseEntity.ok(result);
+    }
 }
+
+

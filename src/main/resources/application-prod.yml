@@ -5,7 +5,7 @@ server:
 external:
   azure-blob-storage:
     base-url: ${AZURE_BLOB_STORAGE_URL}
-    connection-string: ENC(TODO_ENCRYPT_WITH_JASYPT)
+    connection-string: ${AZURE_STORAGE_CONNECTION_STRING}
     timeout:
       connect: 5000
       read: 30000
@@ -34,8 +34,8 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: https://login.microsoftonline.com/95d6a08d-8d38-495b-9c70-ab0cacd42d64/v2.0
-          audiences: 58b42ace-949f-42ad-9c7c-d24e563c3c68
+          issuer-uri: ${OAUTH2_ISSUER_URI:https://login.microsoftonline.com/a7048452-8647-45be-a810-e2f665115655/v2.0}
+          audiences: ${OAUTH2_AUDIENCE:a3704500-c79d-43b4-a2bd-30b1437e819a}
 
 # Logging Configuration
 logging:

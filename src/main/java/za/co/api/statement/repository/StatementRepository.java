@@ -29,23 +29,20 @@ public interface StatementRepository extends JpaRepository<StatementEntity, Stri
      * @param pageable pagination parameters
      * @return page of matching statements
      */
-    @Query("""
-        SELECT s FROM StatementEntity s
-        WHERE s.customerId = :customerId
-          AND s.status <> za.co.api.statement.dto.code.StatementStatusCode.DELETED
-          AND (:statementType IS NULL OR s.statementType = :statementType)
-          AND (:status IS NULL OR s.status = :status)
-          AND (:fromDate IS NULL OR s.statementDate >= :fromDate)
-          AND (:toDate IS NULL OR s.statementDate <= :toDate)
-        ORDER BY s.statementDate DESC
-        """)
-    Page<StatementEntity> findByFilters(
-            @Param("customerId") String customerId,
-            @Param("statementType") StatementTypeCode statementType,
-            @Param("status") StatementStatusCode status,
-            @Param("fromDate") LocalDateTime fromDate,
-            @Param("toDate") LocalDateTime toDate,
-            Pageable pageable);
+@Query("SELECT s FROM StatementEntity s WHERE s.customerId = :customerId " +
+       "AND s.status <> 'DELETED' " +
+       "AND (:statementType IS NULL OR s.statementType = :statementType) " +
+       "AND (:status IS NULL OR s.status = :status) " +
+       "AND (:fromDate IS NULL OR s.statementDate >= :fromDate) " +
+       "AND (:toDate IS NULL OR s.statementDate <= :toDate) " +
+       "ORDER BY s.statementDate DESC")
+Page<StatementEntity> findByFilters(
+        @Param("customerId") String customerId,
+        @Param("statementType") StatementTypeCode statementType,
+        @Param("status") StatementStatusCode status,
+        @Param("fromDate") LocalDateTime fromDate,
+        @Param("toDate") LocalDateTime toDate,
+        Pageable pageable);   
 
     /**
      * Find statements past retention period that are still AVAILABLE.
@@ -66,4 +63,19 @@ public interface StatementRepository extends JpaRepository<StatementEntity, Stri
      */
     boolean existsByContentHashAndCustomerIdAndStatusNot(String contentHash, String customerId,
             StatementStatusCode status);
+
+    /*
+    * Find statements by customer ID, excluding DELETED status, ordered by statement date descending.
+    * This is used for the basic listing endpoint without filters.
+    * Note: This method is defined with a native query for performance optimization, as it is a common access pattern.
+     * The count query is also provided for pagination support.
+     * @param customerId the customer identifier
+     * @param pageable pagination parameters
+     * @return page of matching statements
+     *
+     */
+    @Query(value = "SELECT * FROM statement WHERE customer_id = :customerId AND status != 'DELETED' ORDER BY statement_date DESC",
+       countQuery = "SELECT COUNT(*) FROM statement WHERE customer_id = :customerId AND status != 'DELETED'",
+       nativeQuery = true)
+    Page<StatementEntity> findByCustomerId(@Param("customerId") String customerId, Pageable pageable);
 }

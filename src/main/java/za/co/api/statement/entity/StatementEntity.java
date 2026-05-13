@@ -18,12 +18,8 @@ import lombok.NoArgsConstructor;
 import za.co.api.statement.dto.code.StatementStatusCode;
 import za.co.api.statement.dto.code.StatementTypeCode;
 
-/**
- * JPA Entity for Statement.
- * Represents a customer account statement with metadata and storage reference.
- */
 @Entity
-@Table(name = "STATEMENT")
+@Table(name = "statement")
 @Data
 @Builder
 @NoArgsConstructor
@@ -32,59 +28,56 @@ public class StatementEntity implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    private static final int DEFAULT_RETENTION_DAYS = 365;
-
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name = "ID", nullable = false, length = 36)
+    @Column(name = "id", nullable = false, length = 36)
     private String id;
 
-    @Column(name = "CUSTOMER_ID", nullable = false, length = 50)
+    @Column(name = "customer_id", nullable = false, length = 50)
     private String customerId;
 
-    @Column(name = "STATEMENT_DATE", nullable = false)
+    @Column(name = "statement_date", nullable = false,columnDefinition = "TIMESTAMP")
     private LocalDateTime statementDate;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "STATEMENT_TYPE", nullable = false, length = 20)
+    @Column(name = "statement_type", nullable = false, length = 20)
     private StatementTypeCode statementType;
 
-    @Column(name = "ACCOUNT_NUMBER", nullable = false, length = 20)
+    @Column(name = "account_number", nullable = false, length = 20)
     private String accountNumber;
 
-    @Column(name = "FILE_NAME", nullable = false, length = 255)
+    @Column(name = "file_name", nullable = false, length = 255)
     private String fileName;
 
-    @Column(name = "FILE_SIZE")
+    @Column(name = "file_size")
     private Long fileSize;
 
-    @Column(name = "CONTENT_HASH", length = 64)
+    @Column(name = "content_hash", length = 64)
     private String contentHash;
 
-    @Column(name = "BLOB_PATH", length = 500)
+    @Column(name = "blob_path", length = 500)
     private String blobPath;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "STATUS", length = 20)
+    @Column(name = "status", length = 20)
     private StatementStatusCode status;
 
-    @Column(name = "RETENTION_DAYS")
+    @Column(name = "retention_days")
     private Integer retentionDays;
 
     @Version
-    @Column(name = "VERSION")
+    @Column(name = "version")
     private Long version;
 
-    // Audit fields - Spring Data JPA Auditing (greenfield API)
-    @Column(name = "CREATED_AT", updatable = false)
+    @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
-    @Column(name = "UPDATED_AT")
+    @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    @Column(name = "CREATED_BY", updatable = false, length = 255)
+    @Column(name = "created_by", updatable = false, length = 255)
     private String createdBy;
 
-    @Column(name = "UPDATED_BY", length = 255)
+    @Column(name = "updated_by", length = 255)
     private String updatedBy;
 }

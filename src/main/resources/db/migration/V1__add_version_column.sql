@@ -14,7 +14,7 @@ CREATE TABLE STATEMENT (
     FILE_SIZE           BIGINT,
     CONTENT_HASH        VARCHAR(64),
     BLOB_PATH           VARCHAR(500),
-    STATUS              VARCHAR(20)     DEFAULT 'AVAIL',
+    STATUS              VARCHAR(20)     DEFAULT 'AVAILABLE',
     RETENTION_DAYS      INT             DEFAULT 365,
     VERSION             BIGINT          DEFAULT 0 NOT NULL,
     CREATED_AT          TIMESTAMP,

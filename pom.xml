@@ -100,7 +100,6 @@
 			<artifactId>postgresql</artifactId>
 			<scope>runtime</scope>
 		</dependency>
-
 		<!-- Flyway for database schema migrations -->
 		<dependency>
 			<groupId>org.flywaydb</groupId>
@@ -171,12 +170,6 @@
 			<scope>test</scope>
 		</dependency>
 
-		<!-- TestRestTemplate for integration tests (Spring Boot 4 moved it to separate module) -->
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-resttestclient</artifactId>
-			<scope>test</scope>
-		</dependency>
 		
 		<!-- RabbitMQ Testing - events.enabled=true -->
 		<dependency>
@@ -198,6 +191,28 @@
             <artifactId>lombok</artifactId>
             <scope>provided</scope>
         </dependency>
+
+    <!-- Test dependencies -->		
+		<dependency>
+			<groupId>org.mockito</groupId>
+			<artifactId>mockito-core</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.mockito</groupId>
+			<artifactId>mockito-junit-jupiter</artifactId>
+			<scope>test</scope>
+		</dependency>	
+		<dependency>
+			<groupId>org.springframework.security</groupId>
+			<artifactId>spring-security-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.azure</groupId>
+			<artifactId>azure-storage-blob</artifactId>
+			<version>12.27.0</version>
+		</dependency>	
 	</dependencies>
 
 	<build>
@@ -215,6 +230,19 @@
 				</executions>
 			</plugin>
 		</plugins>
+		    <resources>
+				<resource>
+					<directory>src/main/resources</directory>
+					<filtering>true</filtering>
+					<includes>
+						<include>**/*.yml</include>
+						<include>**/*.yaml</include>
+						<include>**/*.properties</include>
+						<include>**/*.sql</include>
+						<include>**/*.xml</include>
+					</includes>
+				</resource>
+			</resources>
 	</build>
 
 	<!-- GitHub Packages distribution for deployment -->

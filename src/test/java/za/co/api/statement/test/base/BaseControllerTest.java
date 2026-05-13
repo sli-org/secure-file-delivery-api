@@ -52,12 +52,8 @@ public abstract class BaseControllerTest {
     }
 
     @AfterEach
-    void clearSecurityContext() {
-        SecurityContextHolder.clearContext();
-    }
-
-    @AfterEach
     void tearDown() {
+        SecurityContextHolder.clearContext();
         sentryMock.close();
     }
 }

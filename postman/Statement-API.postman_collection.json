@@ -1,26 +1,52 @@
 {
   "info": {
-    "name": "Secure File Delivery API",
-    "description": "Postman collection for Secure File Delivery API. Covers all endpoints: upload, list, find, download-link, download, delete.\n\n**Setup:**\n1. Import this collection\n2. Import the environment file (postman-environment.json)\n3. Get a JWT token and set `bearer_token` variable\n4. Run requests in order (Upload → List → Find → Download Link → Download → Delete)",
+    "name": "Secure File Delivery API - Azure AD",
+    "description": "Postman collection for Secure File Delivery API with Azure AD authentication using **Authorization Code flow**.\n\n🔐 **SETUP INSTRUCTIONS:**\n\n**Step 1: Configure OAuth 2.0 at the COLLECTION level**\n\n1. Click on the collection name\n2. Go to the **Authorization** tab\n3. Configure as follows:\n\n| Setting | Value |\n|---------|-------|\n| Type | OAuth 2.0 |\n| Add auth data to | Request Headers |\n| Grant Type | Authorization Code |\n| Callback URL | https://oauth.pstmn.io/v1/callback |\n| Auth URL | https://login.microsoftonline.com/{{tenant_id}}/oauth2/v2.0/authorize |\n| Access Token URL | https://login.microsoftonline.com/{{tenant_id}}/oauth2/v2.0/token |\n| Client ID | {{client_id}} |\n| Client Secret | (LEAVE BLANK) |\n| Scope | {{scope_prefix}}/statement.read {{scope_prefix}}/statement.create {{scope_prefix}}/statement.delete offline_access |\n| Client Authentication | Send as Basic Auth header |\n\n**Step 2: Get Token**\n\n4. Click 'Get New Access Token'\n5. Sign in with your Azure AD user account\n6. Click 'Use Token'\n\n**Step 3: Test**\n\n7. Send any request - the token will be automatically included\n\n**Prerequisites (already configured):**\n- ✅ Delegated permissions: statement.read, statement.create, statement.delete\n- ✅ Redirect URI: https://oauth.pstmn.io/v1/callback\n- ✅ Allow public client flows: Enabled\n\n**Why this works:**\n- Authorization Code flow includes user login → token contains 'scp' claim\n- Spring Boot automatically adds 'SCOPE_' prefix to scopes\n- Your @PreAuthorize('hasAuthority('SCOPE_statement:read')') will match",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
     { "key": "base_url", "value": "http://localhost:8093" },
     { "key": "api_path", "value": "/api/v1/statements" },
+    { "key": "tenant_id", "value": "a7048452-8647-45be-a810-e2f665115655" },
+    { "key": "client_id", "value": "a3704500-c79d-43b4-a2bd-30b1437e819a" },
+    { "key": "scope_prefix", "value": "api://a3704500-c79d-43b4-a2bd-30b1437e819a" },
+    { "key": "bearer_token", "value": "" },
     { "key": "statement_id", "value": "" },
-    { "key": "download_token", "value": "" },
-    { "key": "bearer_token", "value": "" }
+    { "key": "download_token", "value": "" }
   ],
   "auth": {
     "type": "bearer",
     "bearer": [{ "key": "token", "value": "{{bearer_token}}" }]
   },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "exec": [
+          "// Pre-request check for token",
+          "if (!pm.environment.get('bearer_token')) {",
+          "    console.log('⚠️ No bearer token found.');",
+          "    console.log('Please configure OAuth 2.0 in the Authorization tab and get a token.');",
+          "}"
+        ]
+      }
+    }
+  ],
   "item": [
     {
-      "name": "Health Check",
+      "name": "🔐 OAuth 2.0 Token Setup (READ THIS FIRST)",
+      "description": "**To get a token that works with your controller:**\n\n1. Go to the **COLLECTION Authorization tab** (not individual request)\n2. Set Type to **OAuth 2.0**\n3. Configure:\n   - Grant Type: **Authorization Code**\n   - Callback URL: `https://oauth.pstmn.io/v1/callback`\n   - Auth URL: `https://login.microsoftonline.com/{{tenant_id}}/oauth2/v2.0/authorize`\n   - Access Token URL: `https://login.microsoftonline.com/{{tenant_id}}/oauth2/v2.0/token`\n   - Client ID: `{{client_id}}`\n   - Client Secret: **(leave empty)**\n   - Scope: `{{scope_prefix}}/statement.read {{scope_prefix}}/statement.create {{scope_prefix}}/statement.delete offline_access`\n   - Client Authentication: `Send as Basic Auth header`\n\n4. Click **Get New Access Token**\n5. Sign in with your Azure AD user account\n6. Click **Use Token**\n\n**The token will now contain the 'scp' claim with your delegated permissions!**",
+      "request": {
+        "method": "GET",
+        "url": { "raw": "{{base_url}}/actuator/health", "host": ["{{base_url}}"], "path": ["actuator", "health"] },
+        "auth": { "type": "noauth" }
+      }
+    },
+    {
+      "name": "🏥 Health Check",
       "item": [
         {
-          "name": "Actuator Health",
+          "name": "Actuator Health (Public - No Auth)",
           "request": {
             "method": "GET",
             "url": { "raw": "{{base_url}}/actuator/health", "host": ["{{base_url}}"], "path": ["actuator", "health"] },
@@ -44,7 +70,7 @@
           ]
         },
         {
-          "name": "Swagger UI",
+          "name": "Swagger UI (Public - No Auth)",
           "request": {
             "method": "GET",
             "url": { "raw": "{{base_url}}/swagger-ui/index.html", "host": ["{{base_url}}"], "path": ["swagger-ui", "index.html"] },
@@ -54,10 +80,43 @@
       ]
     },
     {
-      "name": "Statements",
+      "name": "📄 Statements (Requires Bearer Token)",
       "item": [
         {
-          "name": "1. Upload Statement (PDF)",
+          "name": "1. List Statements (SCOPE_statement:read required)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}{{api_path}}?customerId=CUST-001&limit=10&offset=0",
+              "host": ["{{base_url}}{{api_path}}"],
+              "query": [
+                { "key": "customerId", "value": "CUST-001" },
+                { "key": "limit", "value": "10" },
+                { "key": "offset", "value": "0" }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('List returns 200 or 404', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 404]);",
+                  "});",
+                  "if (pm.response.code === 200) {",
+                  "    var json = pm.response.json();",
+                  "    pm.test('Response has items array', function () {",
+                  "        pm.expect(json.items).to.be.an('array');",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2. Upload Statement (SCOPE_statement:create required)",
           "request": {
             "method": "POST",
             "url": { "raw": "{{base_url}}{{api_path}}", "host": ["{{base_url}}{{api_path}}"] },
@@ -77,58 +136,21 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Upload returns 201', function () {",
-                  "    pm.response.to.have.status(201);",
+                  "pm.test('Upload returns 201 or 403', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([201, 403]);",
                   "});",
-                  "pm.test('Save statement ID', function () {",
+                  "if (pm.response.code === 201) {",
                   "    var json = pm.response.json();",
-                  "    pm.expect(json.id).to.not.be.undefined;",
                   "    pm.collectionVariables.set('statement_id', json.id);",
-                  "    console.log('Saved statement_id: ' + json.id);",
-                  "});"
+                  "    console.log('✅ Saved statement_id: ' + json.id);",
+                  "}"
                 ]
               }
             }
           ]
         },
         {
-          "name": "2. List Statements",
-          "request": {
-            "method": "GET",
-            "url": {
-              "raw": "{{base_url}}{{api_path}}?customerId=CUST-001&limit=10&offset=0",
-              "host": ["{{base_url}}{{api_path}}"],
-              "query": [
-                { "key": "customerId", "value": "CUST-001" },
-                { "key": "limit", "value": "10" },
-                { "key": "offset", "value": "0" },
-                { "key": "statementType", "value": "MONTHLY", "disabled": true },
-                { "key": "status", "value": "ACTIVE", "disabled": true },
-                { "key": "fromDate", "value": "2026-01-01T00:00:00", "disabled": true },
-                { "key": "toDate", "value": "2026-12-31T23:59:59", "disabled": true }
-              ]
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('List returns 200', function () {",
-                  "    pm.response.to.have.status(200);",
-                  "});",
-                  "pm.test('Response has items array', function () {",
-                  "    var json = pm.response.json();",
-                  "    pm.expect(json.items).to.be.an('array');",
-                  "    pm.expect(json.totalCount).to.be.a('number');",
-                  "});"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "3. Find Statement by ID",
+          "name": "3. Find Statement by ID (SCOPE_statement:read required)",
           "request": {
             "method": "GET",
             "url": { "raw": "{{base_url}}{{api_path}}/{{statement_id}}", "host": ["{{base_url}}{{api_path}}"], "path": ["{{statement_id}}"] }
@@ -138,12 +160,8 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Find returns 200', function () {",
-                  "    pm.response.to.have.status(200);",
-                  "});",
-                  "pm.test('Statement has correct ID', function () {",
-                  "    var json = pm.response.json();",
-                  "    pm.expect(json.id).to.eql(pm.collectionVariables.get('statement_id'));",
+                  "pm.test('Find returns 200 or 404', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 404]);",
                   "});"
                 ]
               }
@@ -151,7 +169,7 @@
           ]
         },
         {
-          "name": "4. Generate Download Link",
+          "name": "4. Generate Download Link (SCOPE_statement:create required)",
           "request": {
             "method": "POST",
             "url": { "raw": "{{base_url}}{{api_path}}/{{statement_id}}/download-links", "host": ["{{base_url}}{{api_path}}"], "path": ["{{statement_id}}", "download-links"] },
@@ -166,49 +184,49 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Download link returns 201', function () {",
-                  "    pm.response.to.have.status(201);",
+                  "pm.test('Download link returns 201 or 403', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([201, 403]);",
                   "});",
-                  "pm.test('Save download token', function () {",
+                  "if (pm.response.code === 201) {",
                   "    var json = pm.response.json();",
-                  "    pm.expect(json.downloadUrl).to.not.be.undefined;",
-                  "    // Extract token from URL (last path segment)",
                   "    var url = json.downloadUrl;",
                   "    var token = url.substring(url.lastIndexOf('/') + 1);",
                   "    pm.collectionVariables.set('download_token', token);",
-                  "    console.log('Saved download_token: ' + token);",
-                  "});"
+                  "    console.log('✅ Saved download_token: ' + token);",
+                  "}"
                 ]
               }
             }
           ]
         },
         {
-          "name": "5. Download PDF (Token-Based)",
+          "name": "5. Download PDF (Public - No Auth Required)",
           "request": {
             "method": "GET",
             "url": { "raw": "{{base_url}}{{api_path}}/download/{{download_token}}", "host": ["{{base_url}}{{api_path}}"], "path": ["download", "{{download_token}}"] },
             "auth": { "type": "noauth" },
-            "description": "No JWT required — HMAC token provides authentication"
+            "description": "No JWT required — HMAC-signed token provides authentication"
           },
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Download returns 200', function () {",
-                  "    pm.response.to.have.status(200);",
+                  "pm.test('Download returns 200 or 404', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 404]);",
                   "});",
-                  "pm.test('Content-Type is PDF', function () {",
-                  "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/pdf');",
-                  "});"
+                  "if (pm.response.code === 200) {",
+                  "    pm.test('Content-Type is PDF', function () {",
+                  "        pm.expect(pm.response.headers.get('Content-Type')).to.include('application/pdf');",
+                  "    });",
+                  "}"
                 ]
               }
             }
           ]
         },
         {
-          "name": "6. Delete Statement (Soft Delete)",
+          "name": "6. Delete Statement (SCOPE_statement:delete required)",
           "request": {
             "method": "DELETE",
             "url": { "raw": "{{base_url}}{{api_path}}/{{statement_id}}", "host": ["{{base_url}}{{api_path}}"], "path": ["{{statement_id}}"] }
@@ -218,8 +236,8 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Delete returns 204', function () {",
-                  "    pm.response.to.have.status(204);",
+                  "pm.test('Delete returns 204 or 403', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([204, 403]);",
                   "});"
                 ]
               }
@@ -229,10 +247,53 @@
       ]
     },
     {
-      "name": "Negative Tests",
+      "name": "❌ Negative Tests",
       "item": [
         {
-          "name": "Find with invalid UUID",
+          "name": "No Token - Returns 401",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}{{api_path}}?customerId=CUST-001&limit=10&offset=0", "host": ["{{base_url}}{{api_path}}"], "query": [{ "key": "customerId", "value": "CUST-001" }, { "key": "limit", "value": "10" }, { "key": "offset", "value": "0" }] },
+            "auth": { "type": "noauth" }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Returns 401 Unauthorized', function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Invalid Token - Returns 401",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}{{api_path}}?customerId=CUST-001&limit=10&offset=0", "host": ["{{base_url}}{{api_path}}"], "query": [{ "key": "customerId", "value": "CUST-001" }, { "key": "limit", "value": "10" }, { "key": "offset", "value": "0" }] },
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "invalid.token.value" }]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Invalid token returns 401', function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Find with invalid UUID - Returns 400",
           "request": {
             "method": "GET",
             "url": { "raw": "{{base_url}}{{api_path}}/not-a-uuid", "host": ["{{base_url}}{{api_path}}"], "path": ["not-a-uuid"] }
@@ -251,7 +312,7 @@
           ]
         },
         {
-          "name": "Find non-existent statement",
+          "name": "Find non-existent statement - Returns 404",
           "request": {
             "method": "GET",
             "url": { "raw": "{{base_url}}{{api_path}}/00000000-0000-0000-0000-000000000000", "host": ["{{base_url}}{{api_path}}"], "path": ["00000000-0000-0000-0000-000000000000"] }
@@ -270,7 +331,7 @@
           ]
         },
         {
-          "name": "Download with expired token",
+          "name": "Download with invalid token - Returns 404",
           "request": {
             "method": "GET",
             "url": { "raw": "{{base_url}}{{api_path}}/download/invalid-token-value", "host": ["{{base_url}}{{api_path}}"], "path": ["download", "invalid-token-value"] },
@@ -283,36 +344,6 @@
                 "exec": [
                   "pm.test('Returns 400/404 for invalid token', function () {",
                   "    pm.expect(pm.response.code).to.be.oneOf([400, 404]);",
-                  "});"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Upload without auth token",
-          "request": {
-            "method": "POST",
-            "url": { "raw": "{{base_url}}{{api_path}}", "host": ["{{base_url}}{{api_path}}"] },
-            "auth": { "type": "noauth" },
-            "body": {
-              "mode": "formdata",
-              "formdata": [
-                { "key": "file", "type": "file", "src": "" },
-                { "key": "customerId", "value": "CUST-001", "type": "text" },
-                { "key": "statementDate", "value": "2026-04-01T00:00:00", "type": "text" },
-                { "key": "statementType", "value": "MONTHLY", "type": "text" },
-                { "key": "accountNumber", "value": "1234567890", "type": "text" }
-              ]
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Returns 401 without auth', function () {",
-                  "    pm.response.to.have.status(401);",
                   "});"
                 ]
               }

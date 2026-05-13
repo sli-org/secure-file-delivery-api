@@ -1,5 +1,6 @@
 package za.co.api.statement;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
@@ -18,6 +19,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * @version 1.0.0-SNAPSHOT
  * @since 2025-09-25
  */
+@Slf4j
 @SpringBootApplication
 public class Application {
 
@@ -28,6 +30,6 @@ public class Application {
 	 */
 	public static void main(String[] args) {
 		SpringApplication.run(Application.class, args);
-		System.out.println("Application has started successfully.");
+		log.info("Statement API has started successfully.");
 	}
 }

@@ -1,44 +1,51 @@
-# statement-api - Main Configuration
-# Global configuration for the Statement API
-
+# ==============================================================================
+# Secure File Delivery API - Main Configuration
+# ==============================================================================
 spring:
   application:
-    name: statement-api
-  servlet:
-    multipart:
-      max-file-size: 10MB
-      max-request-size: 12MB
-  output:
-    ansi:
-      enabled: always
+    name: secure-file-delivery-api
+  profiles:
+    active: docker
 
-# Event-driven architecture configuration
+# Default configuration (used when no profile is active)
+---
+spring:
+  config:
+    activate:
+      on-profile: default
+  datasource:
+    url: jdbc:h2:mem:testdb;MODE=PostgreSQL
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+
+server:
+  port: 8080
+
+logging:
+  level:
+    root: INFO
+    "[za.co.api]": DEBUG
+    "[org.springframework.amqp]": WARN
+    "[org.springframework.rabbit]": WARN
+    "[org.springframework.security]": DEBUG
+    "[org.springframework.security.oauth2]": DEBUG
+
+# RabbitMQ Events Configuration
 events:
-  exchange-name: statement_event_exchange
-  routing-key:
-    statement-uploaded: action.statement.uploaded
-    download-link-created: action.downloadlink.created
-    statement-deleted: action.statement.deleted
+  exchange-name: ${EVENTS_EXCHANGE_NAME:statement.events.exchange}
+  queue-name: ${EVENTS_QUEUE_NAME:statement.events.queue}
+  routing-key: ${EVENTS_ROUTING_KEY:statement.event}
 
-# OpenAPI documentation and Swagger UI
-springdoc:
-  swagger-ui:
-    enabled: true
-  default-produces-media-type: application/json
-  default-consumes-media-type: application/json
-  show-actuator: false
-  paths-to-exclude:
-    - /actuator/**
-  override-with-generic-response: false
-  remove-broken-reference-definitions: false
-  writer-with-order-by-keys: true
-  pre-loading-enabled: true
-
-# Sentry Error Tracking
-sentry:
-  dsn: "" # TODO: Add Sentry DSN
-  send-default-pii: true
-  exception-resolver-order: 1
-  environment: ${spring.profiles.active:default}
-  release: ${spring.application.name}@${build.version:unknown}
-  traces-sample-rate: 0.0
+external:
+  azure-blob-storage:
+    base-url: ${AZURE_BLOB_STORAGE_URL}
+    connection-string: ${AZURE_STORAGE_CONNECTION_STRING}
