@@ -1,5 +1,6 @@
 package za.co.api.statement.service;
 
+import java.io.InputStream;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -8,7 +9,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -31,16 +31,11 @@ import za.co.common.exception.ValidationError;
 import za.co.common.exception.ValidationException;
 import za.co.common.security.service.ClaimsService;
 import za.co.common.util.ExceptionUtil;
-import com.azure.storage.blob.BlobContainerClient;
-import com.azure.storage.blob.BlobServiceClient;
-import com.azure.storage.blob.BlobServiceClientBuilder;
-import jakarta.annotation.PostConstruct;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
+
 /**
  * Service for Statement business logic with database persistence.
  * Handles statement upload, retrieval, listing, and soft-delete operations.
- * Integrates with Azure Blob Storage for PDF file storage.
+ * Delegates Azure Blob Storage operations to {@link BlobStorageService}.
  */
 @Service
 @Slf4j
@@ -53,15 +48,12 @@ public class StatementService {
     private static final String PDF_CONTENT_TYPE = "application/pdf";
     private static final String SHA_256_ALGORITHM = "SHA-256";
     private static final int MAX_CUSTOMER_ID_LENGTH = 50;
-    private static final int PAGINATION_LIMIT = 2;
+    private static final int BLOB_PATH_PARTS = 2;
     private static final int MAX_ACCOUNT_NUMBER_LENGTH = 20;
     private static final int MAX_FILENAME_LENGTH = 255;
     private static final byte[] PDF_MAGIC_BYTES = new byte[]{0x25, 0x50, 0x44, 0x46}; // %PDF
 
-    @Value("${azure.storage.connection-string}")
-    private String azureStorageConnectionString;
-
-    private BlobServiceClient blobServiceClient;
+    private final BlobStorageService blobStorageService;
     private final StatementRepository repository;
     private final StatementTransformer transformer;
     private final StatementEventService eventService;
@@ -69,32 +61,18 @@ public class StatementService {
     private final ClaimsService claimsService;
 
     public StatementService(
+            BlobStorageService blobStorageService,
             StatementRepository repository,
             StatementTransformer transformer,
             StatementEventService eventService,
             DownloadLinkService downloadLinkService,
             ClaimsService claimsService) {
+        this.blobStorageService = blobStorageService;
         this.repository = repository;
         this.transformer = transformer;
         this.eventService = eventService;
         this.downloadLinkService = downloadLinkService;
         this.claimsService = claimsService;
-    }
-
-    @PostConstruct
-    public void initAzureStorage() {
-        if (azureStorageConnectionString != null && !azureStorageConnectionString.isEmpty()) {
-            try {
-                blobServiceClient = new BlobServiceClientBuilder()
-                        .connectionString(azureStorageConnectionString)
-                        .buildClient();
-                log.info("Azure Blob Storage client initialized successfully");
-            } catch (Exception e) {
-                log.error("Failed to initialize Azure Blob Storage client: {}", e.getMessage(), e);
-            }
-        } else {
-            log.warn("Azure Storage connection string not configured");
-        }
     }
     /**
      * Uploads a new statement PDF to blob storage and creates metadata record.
@@ -143,7 +121,7 @@ public class StatementService {
             String blobPath = String.format("statements/%s/%s.pdf", sanitizedCustomerId, java.util.UUID.randomUUID());
 
             // Upload to Azure Blob Storage (BR1)
-            uploadToBlobStorage(blobPath, fileBytes);
+            blobStorageService.upload(blobPath, fileBytes, true);
 
             // Sanitize filename to prevent header injection
             String safeFileName = sanitizeFileName(file.getOriginalFilename());
